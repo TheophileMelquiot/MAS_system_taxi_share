@@ -23,7 +23,7 @@ def draw_model(figure, model):
     figure.clear()
     layout = figure.add_gridspec(3, 2, width_ratios=(1.5, 1), height_ratios=(1, 1, 0.5))
     city_ax = figure.add_subplot(layout[:2, 0])
-    legend_ax = figure.add_subplot(layout[2, 0])
+    legend_ax = figure.add_subplot(layout[2, :])
     service_ax = figure.add_subplot(layout[0, 1])
     distance_ax = figure.add_subplot(layout[1, 1])
     _draw_city(city_ax, model)
@@ -88,7 +88,8 @@ def _draw_waiting_passengers(ax, model):
             row, access, xybox=(-5 if right_half else 5, -14 if near_top else 14),
             xycoords="data", boxcoords="offset points",
             box_alignment=(1 if right_half else 0, 1 if near_top else 0), frameon=False,
-            arrowprops={"arrowstyle": "-", "color": "#697787", "linewidth": 0.7},
+            arrowprops={"arrowstyle": "-", "color": "#697787", "linewidth": 0.7,
+                        "linestyle": "--"},
             annotation_clip=False)
         annotation.set_zorder(6)
         ax.add_artist(annotation)
@@ -127,7 +128,7 @@ def _draw_taxis(ax, model):
 
 
 def _draw_legends(ax):
-    """Reserve a bottom row for two independent, clearly titled legends."""
+    """Explain agents and map symbols in three legends across the bottom row."""
     ax.set_axis_off()
     taxi_handles = [Line2D([], [], marker=">", markersize=8, linestyle="", color=COLORS[state], label=label)
                for state, label in (("idle", "Empty, available taxi"),
@@ -136,11 +137,22 @@ def _draw_legends(ax):
     passenger_handles = [Line2D([], [], marker="o", linestyle="", color=color, label=label)
                    for color, label in ((PASSENGER_COLORS[PassengerState.WAITING], "Waiting passenger"),
                                         (PASSENGER_COLORS[PassengerState.RESERVED], "Reserved passenger"))]
+    map_handles = [
+        Line2D([], [], marker="s", markersize=6, linestyle="", color="#526476", label="Building"),
+        Line2D([], [], marker=".", markersize=6, linestyle="", color="#526476", label="Road access"),
+        Line2D([], [], color="#a5aeb7", linewidth=0.7, label="Building-to-access link"),
+        Line2D([], [], color="#697787", linewidth=0.7, linestyle="--", label="Passenger display offset"),
+    ]
     taxi_legend = ax.legend(handles=taxi_handles, title="Taxis", loc="upper left",
                            bbox_to_anchor=(0.04, 1), fontsize=8, title_fontsize=9)
     ax.add_artist(taxi_legend)
-    ax.legend(handles=passenger_handles, title="Passengers", loc="upper right",
-              bbox_to_anchor=(0.96, 1), fontsize=8, title_fontsize=9)
+    passenger_legend = ax.legend(handles=passenger_handles, title="Passengers", loc="upper right",
+                                bbox_to_anchor=(0.96, 1), fontsize=8, title_fontsize=9)
+    ax.add_artist(passenger_legend)
+    # Keep the tallest legend as the main one so constrained layout reserves
+    # enough bottom space for all entries, including in a small GUI window.
+    ax.legend(handles=map_handles, title="Map", loc="upper center",
+              bbox_to_anchor=(0.5, 1), fontsize=8, title_fontsize=9)
 
 
 def _draw_service(ax, model):

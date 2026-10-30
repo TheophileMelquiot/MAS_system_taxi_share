@@ -69,6 +69,13 @@ One cell measures 100 m per side; dark squares mark buildings. A taxi label such
 as `T2 (1/3)` identifies taxi 2 with one occupied seat out of three. The same
 three taxi colors and two passenger colors are used throughout the dashboard.
 
+The **Map** legend identifies buildings, road-access dots and the solid lines
+linking buildings to their fixed pickup/drop cells. Passengers wait at those
+road accesses because taxis cannot drive into building cells. They appear
+directly at the access; walking from the building is not simulated. Dashed
+lines connect visually offset passenger dots to their actual waiting access.
+Those offsets prevent overlap and do not move passengers to another cell.
+
 The GUI saves its current inputs to `output/gui/scenario.json`. Replay uses the
 scenario already held in memory. Loading a saved scenario file is not supported.
 

@@ -24,6 +24,9 @@ class Passenger(Agent):
         """Publish exactly once, only when the scenario clock releases this trip."""
         assert self.state == PassengerState.FUTURE, "A trip may appear only once"
         self.state = PassengerState.WAITING
+        # Buildings are off-road. Passengers appear directly at their building's
+        # adjacent road access, where a taxi can stop; walking is not simulated.
+        # The renderer may offset their dots to avoid overlap, but pos stays here.
         self.model.grid.place_agent(self, self.trip.origin)
         for address in self.model.taxi_addresses:
             self._send(address, Kind.CFP, self.trip)
