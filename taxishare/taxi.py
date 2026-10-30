@@ -13,6 +13,7 @@ from .planning import PlanningContext
 
 
 class Taxi(Agent):
+    """Negotiate local commitments and execute one physical action at a time."""
     def __init__(self, model, initial):
         super().__init__(model)
         self.taxi_id = initial.taxi_id
@@ -91,7 +92,12 @@ class Taxi(Agent):
             self._revalidate_and_commit(offer)
 
     def _revalidate_and_commit(self, offer):
-        """Offers reserve no resources. Accepted promises are never worsened."""
+        """Check accepted offer bounds, then commit without reserving twice.
+
+        These bounds apply at acceptance. Later insertions preserve cumulative
+        ride limits and approach distances; actual pickup time can still grow
+        because of congestion or additional operations.
+        """
         pid = offer.passenger_id
         if pid in self.commitments:
             self._send(pid, Kind.REJECT, (offer.identity, "already_committed"))
@@ -108,11 +114,17 @@ class Taxi(Agent):
         self._send(pid, Kind.CONFIRM, (offer.identity, None))
 
     def close_round(self):
+        """Consume closure messages and expire offers, retaining commitments."""
         self.receive_requests()
         self.offers.clear()
 
     def planning_context(self):
-        """Freeze the current physical action; only its future suffix can change."""
+        """Project the end of the locked action for hypothetical replanning.
+
+        A moving taxi must reach its target before any stop or reversal. Charge
+        the remaining metres to current occupants, with a free-speed ETA. For
+        an operation, carry its remaining time and projected seat occupancy.
+        """
         anchor = self.pos
         prefix, seconds = 0.0, 0.0
         occupied = set(self.occupied)
@@ -167,6 +179,7 @@ class Taxi(Agent):
             self._start_operation(leg.stop)
 
     def _start_move(self, leg):
+        """Enter one adjacent portion; any direction, including reverse, is legal."""
         target = leg.cells[0]
         heading = (target[0] - self.pos[0], target[1] - self.pos[1])
         assert target in self.model.city.adjacent[self.pos], "Illegal road move"
@@ -174,6 +187,7 @@ class Taxi(Agent):
         self.action = Move(self.pos, target, heading)
 
     def _start_operation(self, stop):
+        """Begin service at an access, occupying a seat for the entire operation."""
         assert self.pos == stop.cell and self.model.city.service_cell(self.pos), "Illegal service location"
         pid = stop.passenger_id
         if stop.pickup:
@@ -201,6 +215,7 @@ class Taxi(Agent):
             self.idle_seconds += STEP_SECONDS
 
     def _advance_move(self, speed):
+        """Charge movement once to the taxi, its load category and each occupant."""
         remaining = max(0.0, CELL_METERS - self.action.progressed_m)
         distance = min(remaining, speed * STEP_SECONDS)
         active_seconds = distance / speed
@@ -217,6 +232,7 @@ class Taxi(Agent):
 
     @property
     def status(self):
+        """Describe the current action; occupancy remains a separate measurement."""
         if isinstance(self.action, Move):
             return "occupied" if self.occupied else "approach"
         if isinstance(self.action, Operation):

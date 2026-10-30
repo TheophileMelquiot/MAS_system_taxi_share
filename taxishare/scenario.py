@@ -12,12 +12,13 @@ SCENARIO_VERSION = 1
 
 
 def integer_pair(value):
-    """JSON coordinates must contain exactly two integers, never booleans."""
+    """Accept an internal coordinate tuple of two integers, never booleans."""
     return isinstance(value, tuple) and len(value) == 2 and all(type(v) is int for v in value)
 
 
 @dataclass(frozen=True)
 class TaxiInitial:
+    """Saved road position and display heading before any request is served."""
     taxi_id: int
     cell: Cell
     heading: Heading
@@ -25,6 +26,7 @@ class TaxiInitial:
 
 @dataclass(frozen=True)
 class Request:
+    """A future trip between building IDs, revealed at appearance_tick."""
     passenger_id: int
     origin_id: int
     destination_id: int
@@ -41,6 +43,8 @@ def random_stream(seed: int, name: str) -> random.Random:
 
 def draw_axes(size: int, count: int, spacing: int, rng) -> tuple[int, ...]:
     """Uniformly sample legal axis combinations using a gap-removing bijection."""
+    # The boundary axes are fixed. Sample inner axes in compressed coordinates,
+    # then restore mandatory gaps so no rejection loop or retry is needed.
     inner = count - 2
     upper = size - 1 - (count - 1) * (spacing - 1)
     compressed = sorted(rng.sample(range(1, upper), inner))
@@ -49,6 +53,7 @@ def draw_axes(size: int, count: int, spacing: int, rng) -> tuple[int, ...]:
 
 @dataclass(frozen=True)
 class Scenario:
+    """Fixed inputs for replay; each model creates fresh agents from these data."""
     config: Config
     horizontal: tuple[int, ...]
     vertical: tuple[int, ...]
@@ -112,15 +117,21 @@ class Scenario:
 
     @property
     def fingerprint(self):
+        """Hash all saved inputs, including capacity, but not the simulator code."""
         data = json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
         return sha256(data.encode()).hexdigest()
 
     def save(self, path):
+        """Export inputs as JSON for inspection and provenance, not live state."""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         Path(path).write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
 
 def generate(config: Config) -> Scenario:
-    """Four streams isolate map, fleet, trips and arrival times."""
+    """Draw and validate all inputs before any simulation decision is made.
+
+    Four random streams isolate map, fleet, trips and arrival times. Agents
+    learn a request only when the model reveals its appearance tick.
+    """
     map_rng, fleet_rng, trip_rng, time_rng = (
         random_stream(config.seed, name) for name in ("map", "fleet", "trips", "times"))
     horizontal = draw_axes(config.height, config.horizontal_axes, config.axis_spacing, map_rng)
@@ -138,6 +149,7 @@ def generate(config: Config) -> Scenario:
     if config.taxis > len(eligible):
         raise ValueError(f"Only {len(eligible)} distinct initial taxi positions")
     positions = fleet_rng.sample(eligible, config.taxis)
+    # Heading remains an initial display value; it does not constrain routing.
     fleet = tuple(TaxiInitial(i, p, fleet_rng.choice(city.headings(p))) for i, p in enumerate(positions))
     # Prepare eligible destinations instead of repeatedly drawing invalid trips.
     # Distinct buildings may share an access, so building IDs alone are not enough.

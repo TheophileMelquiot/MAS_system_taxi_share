@@ -25,6 +25,7 @@ def test_compare_generates_once_and_reuses_inputs(ring_scenario, monkeypatch, tm
         shared = json.loads((tmp_path / f"seed-{seed}/shared/scenario.json").read_text())
         assert individual["config"].pop("capacity") == 1
         assert shared["config"].pop("capacity") == 3
+        # Compare every saved input, including geometry and appearance ticks.
         assert individual == shared
     assert all(row["individual_shared_distance_rate"] == 0 for row in rows)
     assert all(row["shared_shared_distance_rate"] > 0 for row in rows)

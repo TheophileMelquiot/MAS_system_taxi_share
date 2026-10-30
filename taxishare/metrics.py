@@ -11,6 +11,7 @@ from .contracts import PassengerState
 
 
 def difference(end, start):
+    """Leave a duration unknown until both event times have been recorded."""
     return None if end is None or start is None else end - start
 
 
@@ -37,6 +38,8 @@ def passenger_rows(model):
             "distance_ridden_m": distance,
             "detour_m": (max(0.0, distance - p.trip.reference_m)
                          if distance - p.trip.reference_m > EPSILON else 0.0) if completed else None,
+            # Onboard time excludes this passenger's own service operations but
+            # includes stops for others while this passenger remains aboard.
             "waiting_seconds": difference(dates["board_start"], p.trip.appearance_tick * STEP_SECONDS),
             "onboard_seconds": difference(dates["drop_start"], dates["board_end"]),
             "boarding_seconds": difference(dates["board_end"], dates["board_start"]),
@@ -48,6 +51,7 @@ def passenger_rows(model):
 
 
 def taxi_rows(model):
+    """Export vehicle metres by actual occupancy and the action-time accounts."""
     rows = []
     for t in model.taxis:
         shared = sum(t.distances[2:])
@@ -66,6 +70,7 @@ def taxi_rows(model):
 
 
 def summary(model):
+    """Aggregate current vehicle totals and completed-passenger mean outcomes."""
     clients, taxis = passenger_rows(model), taxi_rows(model)
     # Never treat an unfinished trip's missing duration as zero: averages use
     # delivered passengers only, while the remaining population stays explicit.
@@ -95,6 +100,7 @@ def summary(model):
 
 
 def write_csv(path, rows, fields=None):
+    """Write UTF-8 CSV; explicit fields preserve columns for an empty table."""
     with Path(path).open("w", newline="", encoding="utf-8-sig") as stream:
         fieldnames = fields if fields is not None else (list(rows[0]) if rows else [])
         writer = csv.DictWriter(stream, fieldnames=fieldnames)
@@ -103,6 +109,12 @@ def write_csv(path, rows, fields=None):
 
 
 def provenance():
+    """Record environment versions and exact source hashes for exported runs.
+
+    A scenario hash identifies inputs; source hashes also distinguish rule
+    changes such as enabling U-turns. PDF hashes are included only for source
+    documents present directly in the repository root.
+    """
     root = Path(__file__).resolve().parents[1]
     paths = sorted((root / "taxishare").glob("*.py")) + [root / name for name in
             ("app.py", "run_simulation.py", "run_experiments.py")]

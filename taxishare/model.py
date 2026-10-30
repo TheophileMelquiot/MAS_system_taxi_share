@@ -40,6 +40,8 @@ class TaxiShareModel(Model):
         self._appearances = defaultdict(list)
         # The scenario knows future trips for replay, but taxis learn them only
         # through announce() at their appearance tick. D0 is fixed once here.
+        # Future passengers already exist as Mesa agents but stay off the grid
+        # and send no calls until that tick; their future trips are not public.
         for request in sorted(scenario.requests, key=lambda r: r.passenger_id):
             origin = buildings[request.origin_id].access
             destination = buildings[request.destination_id].access
@@ -64,6 +66,7 @@ class TaxiShareModel(Model):
 
     @property
     def time_seconds(self):
+        """Derive physical time from integer ticks to avoid accumulated drift."""
         return self.tick * STEP_SECONDS
 
     def _activate(self, agent_type, behavior, *args):
@@ -91,6 +94,8 @@ class TaxiShareModel(Model):
         self._activate(Passenger, "receive_transport")
         self.loads, self.speeds = traffic_snapshot(         # 8. Common loads.
             self.taxis, self.config.congestion_threshold)
+        # Observe the boundary before motion, including an operation just begun.
+        # End-of-interval completions are finalized at the next boundary.
         self._observe()
         self._activate(Taxi, "advance_action", self.speeds) # 9. Advance one interval.
         self.tick += 1
@@ -131,6 +136,8 @@ class TaxiShareModel(Model):
         # A temporary lack of work is not a failure while future calls or taxi
         # actions can still change feasibility. Only a fully parked fleet with
         # no future calls and no admissible offer is considered frozen.
+        # This is a defensive stop, not an orientation-based blockage: a parked
+        # taxi can reverse and offer a standalone trip on the connected network.
         future = bool(self._appearances)
         parked = all(t.action is None and not t.commitments and not t.legs for t in self.taxis)
         waiting = any(p.state == PassengerState.WAITING for p in self.passengers)
@@ -148,6 +155,7 @@ class TaxiShareModel(Model):
         self.data.collect(self)
 
     def run_to_end(self):
+        """Run without animation until completion, the time limit or a freeze."""
         while self.running:
             self.step()
         return self

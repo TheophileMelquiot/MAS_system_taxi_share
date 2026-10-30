@@ -15,6 +15,7 @@ DIRECTIONS = ((0, 1), (1, 0), (0, -1), (-1, 0))
 
 @dataclass(frozen=True)
 class Building:
+    """A non-road location and the fixed adjacent cell where taxis serve it."""
     building_id: int
     cell: Cell
     access: Cell
@@ -29,6 +30,7 @@ class City:
         self.vertical = tuple(sorted(vertical))
         self.roads = frozenset((x, y) for x in range(width) for y in range(height)
                                if x in self.vertical or y in self.horizontal)
+        # Cardinal order makes equal-length paths reproducible across runs.
         self.adjacent = {p: tuple(q for d in DIRECTIONS
                                  if (q := (p[0] + d[0], p[1] + d[1])) in self.roads)
                          for p in sorted(self.roads)}
@@ -37,13 +39,18 @@ class City:
         self._paths = {}
 
     def headings(self, cell: Cell) -> tuple[Heading, ...]:
-        """An initial heading must correspond to a physically possible arrival."""
+        """List possible arrival headings for display and physical-state checks.
+
+        These headings do not restrict the taxi's next departure direction.
+        """
         return tuple((cell[0] - p[0], cell[1] - p[1]) for p in self.adjacent[cell])
 
     def service_cell(self, cell: Cell) -> bool:
+        """Allow stops on roads outside intersections with three or more arms."""
         return cell in self.roads and len(self.adjacent[cell]) < 3
 
     def possible_accesses(self, cell: Cell) -> tuple[Cell, ...]:
+        """List adjacent service cells in stable order for a building's access."""
         return tuple(sorted(q for dx, dy in DIRECTIONS
                             if self.service_cell(q := (cell[0] + dx, cell[1] + dy))))
 
@@ -52,6 +59,7 @@ class City:
         if start not in self.roads:
             raise ValueError(f"Invalid road cell: {start}")
         if start not in self._trees:
+            # All edges have the same length, so BFS also minimizes metres.
             parents = {start: None}
             queue = deque([start])
             while queue:
@@ -77,6 +85,7 @@ class City:
         parents = self._tree(start)
         result = None
         if target in parents:
+            # Follow parent links backwards; taxis consume the result forwards.
             path, node = [], target
             while node != start:
                 path.append(node)

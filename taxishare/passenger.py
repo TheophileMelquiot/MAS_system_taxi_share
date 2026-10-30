@@ -6,6 +6,7 @@ from .messaging import Kind
 
 
 class Passenger(Agent):
+    """Choose among received offers and track transport through taxi messages."""
     def __init__(self, model, trip):
         super().__init__(model)
         self.trip = trip
@@ -39,8 +40,8 @@ class Passenger(Agent):
                   and m.sender == ("taxi", m.payload.taxi_id)]
         if not offers:
             return
-        # Arrival time is the primary preference. Detour fairness only breaks
-        # time ties; taxi ID makes an exact tie reproducible without randomness.
+        # Prefer the estimated start of boarding, then the worst detour-budget
+        # fraction among affected passengers. Taxi ID breaks any remaining tie.
         offer = min(offers, key=lambda o: (round(o.plan.candidate_pickup_seconds, 7),
                                            round(o.plan.budget_score, 7), o.taxi_id))
         self.selected_offer = offer

@@ -1,9 +1,10 @@
 """Read-only Matplotlib views shared by Tk and image exports."""
 
 from matplotlib.figure import Figure
+from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnnotationBbox, DrawingArea
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, Rectangle
 from collections import defaultdict
 from .contracts import Move, PassengerState
 
@@ -13,6 +14,7 @@ PASSENGER_COLORS = {PassengerState.WAITING: "#db4668", PassengerState.RESERVED: 
 
 
 def create_figure():
+    """Create the shared dashboard canvas for the GUI and exported PNG files."""
     return Figure(figsize=(12, 7), facecolor="#f4f6fa", layout="constrained")
 
 
@@ -33,24 +35,31 @@ def draw_model(figure, model):
 
 
 def _draw_city(ax, model):
+    """Show road cells and their boundaries, with agents at cell centres."""
     city = model.city
     ax.set_facecolor("#e5ebdf")
-    for y in city.horizontal:
-        ax.plot([0, city.width - 1], [y, y], color="#ffffff", linewidth=7, zorder=1)
-        ax.plot([0, city.width - 1], [y, y], color="#c3cbd3", linewidth=1, zorder=1)
-    for x in city.vertical:
-        ax.plot([x, x], [0, city.height - 1], color="#ffffff", linewidth=7, zorder=1)
-        ax.plot([x, x], [0, city.height - 1], color="#c3cbd3", linewidth=1, zorder=1)
+    # Positions are cell centres. Fill roads one cell wide, then draw boundaries
+    # at half-integer coordinates so the underlying MultiGrid stays visible.
+    ax.add_collection(PatchCollection(
+        [Rectangle((x - 0.5, y - 0.5), 1, 1) for x, y in sorted(city.roads)],
+        facecolor="#ffffff", edgecolor="none", zorder=1))
+    ax.vlines([x - 0.5 for x in range(city.width + 1)], -0.5, city.height - 0.5,
+              colors="#adb9ac", linewidth=0.5, zorder=2)
+    ax.hlines([y - 0.5 for y in range(city.height + 1)], -0.5, city.width - 0.5,
+              colors="#adb9ac", linewidth=0.5, zorder=2)
     for b in city.buildings:
         ax.plot([b.cell[0], b.access[0]], [b.cell[1], b.access[1]], color="#a5aeb7", linewidth=0.7)
     ax.scatter([b.cell[0] for b in city.buildings], [b.cell[1] for b in city.buildings],
-               marker="s", s=35, color="#526476", zorder=2)
+               marker="s", s=35, color="#526476", zorder=3)
     ax.scatter([b.access[0] for b in city.buildings], [b.access[1] for b in city.buildings],
                marker=".", s=18, color="#526476", zorder=2)
     _draw_waiting_passengers(ax, model)
     _draw_taxis(ax, model)
     ax.set(xlim=(-1, city.width), ylim=(-1, city.height), aspect="equal",
-           xlabel="Cells (100 m)", ylabel="Cells (100 m)", title="City, access points and headings")
+           xlabel="Cells (100 m)", ylabel="Cells (100 m)",
+           title="City grid | Taxi labels: ID (passengers/seats)")
+    ax.set_xticks(range(0, city.width, max(1, city.width // 10)))
+    ax.set_yticks(range(0, city.height, max(1, city.height // 10)))
 
 
 def _draw_waiting_passengers(ax, model):
@@ -71,12 +80,14 @@ def _draw_waiting_passengers(ax, model):
             row.add_artist(Circle((5 + index * 10, 5), radius=3.5,
                                   facecolor=PASSENGER_COLORS[passenger.state],
                                   edgecolor="white", linewidth=0.7))
-        # Grow inward from the nearest side of the map, above the taxi markers.
+        # Grow inward from the nearest side; keep top-edge rows below the access
+        # so passenger markers do not run into the map title.
         right_half = access[0] > (model.city.width - 1) / 2
+        near_top = access[1] >= model.city.height - 2
         annotation = AnnotationBbox(
-            row, access, xybox=(-5 if right_half else 5, 14),
+            row, access, xybox=(-5 if right_half else 5, -14 if near_top else 14),
             xycoords="data", boxcoords="offset points",
-            box_alignment=(1 if right_half else 0, 0), frameon=False,
+            box_alignment=(1 if right_half else 0, 1 if near_top else 0), frameon=False,
             arrowprops={"arrowstyle": "-", "color": "#697787", "linewidth": 0.7},
             annotation_clip=False)
         annotation.set_zorder(6)
@@ -103,12 +114,16 @@ def _draw_taxis(ax, model):
             heading = taxi.action.heading
             x += ratio * heading[0]
             y += ratio * heading[1]
+        # During a move, use that portion's direction immediately. At rest,
+        # keep the last arrival heading; it does not restrict the next route.
         color = _taxi_color(taxi)
         marker = {(0, 1): "^", (1, 0): ">", (0, -1): "v", (-1, 0): "<"}[heading]
         ax.scatter([x], [y], s=90, marker=marker, color=color, edgecolors="white", zorder=4)
-        labels[(round(x, 3), round(y, 3))].append(str(taxi.taxi_id))
+        labels[(round(x, 3), round(y, 3))].append(
+            f"T{taxi.taxi_id} ({len(taxi.occupied)}/{model.config.capacity})")
     for position, ids in labels.items():
-        ax.annotate(", ".join(ids), position, xytext=(4, 5), textcoords="offset points", fontsize=7)
+        ax.annotate(", ".join(ids), position, xytext=(4, 5), textcoords="offset points", fontsize=7,
+                    bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 0.6})
 
 
 def _draw_legends(ax):

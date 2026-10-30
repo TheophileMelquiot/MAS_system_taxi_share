@@ -1,4 +1,4 @@
-"""End-to-end contracts at physical boundaries and message round boundaries."""
+"""Simulation and planner checks for physical actions, budgets and messages."""
 
 from dataclasses import replace
 import pytest
@@ -284,7 +284,7 @@ def test_zero_budget_allows_exact_route_sharing(ring_scenario):
 
 
 def test_congestion_end_to_end_and_activation_order_independence(ring_scenario):
-    # Two taxis independently reserve sequential trips on the same directed road.
+    # Two taxis serve trips whose routes overlap in the same direction.
     # K=0.5 also slows a single vehicle, producing a controlled nonzero signal.
     scenario = ring_scenario(requests=((0, 0, 2, 0), (1, 1, 2, 0)),
         fleet=((0, (0, 0), (0, -1)), (1, (2, 0), (1, 0))), capacity=1,

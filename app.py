@@ -1,4 +1,13 @@
-"""Local Tk interface. Rendering and wall-clock cadence never change physics."""
+r"""Open the interactive TaxiShare application with Tkinter and Matplotlib.
+
+From the repository root in PowerShell, run:
+    .\.venv\Scripts\python.exe app.py
+
+Use this entry point to inspect the city, change the five main parameters,
+advance or replay a run, and export results. The animation speed controls how
+many simulation ticks are processed between redraws; each tick remains 0.2 s.
+For unattended runs or paired experiments, use the two run_*.py scripts.
+"""
 
 from dataclasses import replace
 import time
@@ -20,6 +29,7 @@ LABELS = {
 
 
 class Application:
+    """Connect interface controls to one model without making agent decisions."""
     def __init__(self, root):
         self.root = root
         self.root.title("TaxiShare | Mesa multi-agent simulation")
@@ -69,6 +79,7 @@ class Application:
         self.refresh()
 
     def single_step(self):
+        """Pause animation and process one model step, which may end the run."""
         self.playing = False
         self._advance_safely()
         self.refresh()
@@ -100,6 +111,7 @@ class Application:
         self.root.after(40, self.pump)
 
     def refresh(self):
+        """Redraw the current state and counters without advancing the model."""
         draw_model(self.figure, self.model)
         self.canvas.draw_idle()
         values = summary(self.model)
@@ -112,6 +124,7 @@ class Application:
                         f"Stop reason: {self.model.stop_reason or '-'}")
 
     def set_scenario(self, scenario):
+        """Reset the model from fixed inputs, with no old actions or counters."""
         # Rebuild every agent and counter from saved exogenous inputs. Replaying
         # must not reuse current commitments or draw a different random city.
         self.playing = False
@@ -122,6 +135,7 @@ class Application:
         self.refresh()
 
     def new_scenario(self):
+        """Apply the five form fields while preserving other Config settings."""
         try:
             values = {name: type(Config.__dataclass_fields__[name].default)(variable.get())
                       for name, variable in self.inputs.items()}
@@ -132,9 +146,11 @@ class Application:
             messagebox.showerror("Invalid configuration", str(exc))
 
     def replay(self):
+        """Restart the same generated inputs, not a new random scenario."""
         self.set_scenario(self.model.scenario)
 
     def export(self):
+        """Pause and save the current state, including an unfinished run."""
         self.playing = False
         directory = filedialog.askdirectory(title="Export directory")
         if directory:
@@ -147,6 +163,7 @@ class Application:
 
 
 def main():
+    """Create the desktop window and let Tk dispatch interface events."""
     root = tk.Tk()
     Application(root)
     root.mainloop()

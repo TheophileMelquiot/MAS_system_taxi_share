@@ -1,4 +1,13 @@
-"""Compare one-seat and three-seat taxis on the same inputs across fixed seeds."""
+r"""Run the paired one-seat versus three-seat experiment without a GUI.
+
+Use this script to reproduce the comparison used for analysis, rather than
+manually changing the capacity in app.py. From the repository root:
+    .\.venv\Scripts\python.exe run_experiments.py --output output/new-comparison
+
+Defaults: five seeds (2026 through 2030), eight taxis and sixty requests per
+run. Each seed generates one set of inputs reused for both capacities. Outputs
+include individual runs, per-seed differences and statistics across pairs.
+"""
 
 import argparse
 from dataclasses import replace
@@ -12,7 +21,8 @@ from taxishare.model import TaxiShareModel
 from taxishare.scenario import generate
 
 
-# These are existing observables. Rates stay in [0, 1] in every CSV.
+# Compare vehicle distance, passenger times and sharing. Rates remain fractions
+# in [0, 1], so a difference of 0.10 means ten percentage points.
 METRICS = {
     "distance_total_m": "m",
     "mean_waiting_seconds": "s",
@@ -41,7 +51,13 @@ def aggregate(rows):
 
 
 def compare(config, seeds, directory):
-    """Generate once per seed; change only capacity between the two runs."""
+    """Generate once per seed; change only capacity between the two runs.
+
+    Both runs must finish before their differences enter the statistics.
+    Incomplete runs are still exported so missing service remains visible.
+    Matching is enforced by reusing scenario data, not by generating twice
+    from the same seed. Only capacity changes within a pair.
+    """
     seeds = list(seeds)
     if not seeds or any(type(seed) is not int or seed < 0 for seed in seeds):
         raise ValueError("Provide at least one nonnegative integer seed")
@@ -93,6 +109,7 @@ def compare(config, seeds, directory):
 
 
 def main():
+    """Parse experiment settings; return 0 for complete pairs, otherwise 2."""
     defaults = Config()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seeds", type=int, nargs="+", default=list(range(2026, 2031)))

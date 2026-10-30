@@ -1,220 +1,273 @@
-# TaxiShare : simulation multi-agents avec Mesa
+# TaxiShare: shared-taxi simulation with Mesa
 
-Simulation locale de taxis partagés, implémentée à partir du cahier des règles
-U01 à U71 et des clarifications de cette conversation, dont la simplification
-du 30 octobre 2026 autorisant les demi-tours. Les agents `Passenger`
-et `Taxi` sont des agents Mesa. Ils décident par messages adressés, avec une
-horloge commune de 0,2 seconde et des actions physiques indépendantes.
+TaxiShare compares individual taxi service with shared rides on a generated
+road network. Passengers request a taxi, compare offers and wait for a confirmed
+assignment. Taxis plan feasible pickups and drops while respecting seat capacity,
+individual detour budgets and previously promised approach distances.
 
-## Lancer l'application
+The model uses Mesa agents, `AgentSet` activation, a non-toroidal `MultiGrid`
+and `DataCollector`. A common clock advances in 0.2-second intervals.
 
-Depuis ce dossier dans PowerShell, l'environnement est déjà installé :
+## Which file should I run?
 
-```powershell
-.\.venv\Scripts\python.exe app.py
-```
+Run commands from the repository root, using its Python environment.
 
-Python 3.11 minimum est nécessaire pour Mesa 3.3.1 ; Python 3.12 est recommandé.
-Sur un autre ordinateur :
+| Entry point | Purpose | When to use it |
+| --- | --- | --- |
+| `app.py` | Open the interactive desktop application | Explore the city, watch taxis, change parameters and export a run |
+| `run_simulation.py` | Run one simulation without a window | Try a configuration or generate detailed results automatically |
+| `run_experiments.py` | Compare capacities 1 and 3 on matched inputs | Reproduce the experiment and collect results for analysis |
+| `python -m pytest` | Run the checks in `tests/` | Verify the implementation after a change; optional for normal use |
+
+The files in `taxishare/` are imported library modules. Do not run them
+individually. In particular, `scenario.py` generates the inputs used by all
+three entry points and is required to run the project.
+
+## Installation
+
+Python 3.11 or later is required; Python 3.12 is the tested version. The desktop
+application also requires Tkinter. From the repository root in PowerShell:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+The two direct dependencies, Mesa and Matplotlib, are pinned in
+`requirements.txt`. `requirements-lock.txt` records the full environment used
+for validation. An existing local `.venv` can be reused without reinstalling.
+
+## Explore one simulation
+
+```powershell
 .\.venv\Scripts\python.exe app.py
 ```
 
-L'interface est en anglais. Elle permet de démarrer, mettre en pause, avancer de 0,2 s, rejouer,
-modifier les paramètres de génération et exporter. Le formulaire ne présente que
-les taxis, les demandes, la fenêtre d'apparition, la capacité et la graine.
-Les autres paramètres restent dans `Config` et accessibles en ligne de commande ;
-générer depuis l'interface conserve leurs valeurs courantes.
-Modifier un champ ne change pas le monde courant : cliquer sur
-« Generate with these parameters » applique ces valeurs à un nouveau scénario.
-Une même graine et les mêmes paramètres reproduisent la même génération.
-Le réglage « Animation speed » change la cadence de l'animation,
-sans modifier la durée du pas ni les décisions.
+The application opens with the default city and demands. Its controls are:
 
-Les clients attendant au même accès sont affichés en ligne, un point par personne :
-rouge pour une recherche en cours, bleu pour une réservation confirmée. Un trait
-relie la ligne à l'accès réel. Les taxis sont gris lorsqu'ils sont vides et libres,
-orange lorsqu'ils sont vides avec une réservation, et verts lorsqu'ils ont des
-passagers (même s'ils ont aussi des réservations futures). Les taxis sont des
-triangles orientés dans leur sens de circulation, y compris pendant les arrêts.
-Deux légendes distinctes, « Taxis » et « Passengers », apparaissent sous la carte.
-Les décalages graphiques ne déplacent pas les agents.
+- **Start / Pause**: start or pause animation.
+- **Advance by 0.2 s**: process one model step, including finalizations due at
+  the current boundary. A terminal step may finish without advancing time.
+- **Replay scenario**: reset agents and counters using the same generated inputs.
+- **Generate with these parameters**: create new inputs using the five fields:
+  taxis, requests, arrival window, seats per taxi and seed.
+- **Export results**: pause and save the current state, even if it is incomplete.
 
-Le scénario courant de l'interface est sauvegardé avant exécution dans
-`output/gui/scenario.json`. Un export de résultats comprend aussi sa propre
-copie complète du scénario. Rejouer remet ce scénario à son état initial.
+Changing a field does not change the current model until generation is requested.
+Other settings, such as map dimensions and detour limits, remain in `Config` and
+are preserved when generating from the interface. The animation speed controls
+simulation ticks per redraw; it does not change the physical duration of a tick.
 
-## Exécution sans interface
+Each taxi is a triangle showing its current movement direction or last arrival
+heading while parked. Gray means empty and available, orange means empty with
+bookings, and green means carrying passengers. Waiting passengers are red dots;
+confirmed passengers waiting to board are blue dots. Visual offsets separate
+people sharing an access without changing their simulated positions.
+
+The city shows square cell boundaries, white road cells and green land cells.
+One cell measures 100 m per side; dark squares mark buildings. A taxi label such
+as `T2 (1/3)` identifies taxi 2 with one occupied seat out of three. The same
+three taxi colors and two passenger colors are used throughout the dashboard.
+
+The GUI saves its current inputs to `output/gui/scenario.json`. Replay uses the
+scenario already held in memory. Loading a saved scenario file is not supported.
+
+## Generate another map or repeat the same inputs
+
+Change **Seed** (for example, from 2026 to 2027) and click **Generate with these
+parameters** to draw another city and demand set. Repeat with other seeds to
+explore new inputs. The set of possible cities is finite, so different seeds
+are not a mathematical guarantee of unique road layouts.
+
+Using the same seed, parameters and generator version recreates the same inputs.
+Clicking Generate again without changing them intentionally reproduces the same
+scenario. Use **Replay scenario** to reset the current inputs directly.
+
+Separate random streams control the map, fleet, trips and arrival times. Changing
+capacity does not redraw the city or demands; changing taxi count does not redraw
+the city or passenger requests. Map dimensions and axis counts can be changed
+through `Config` or the single-run command line, not the five-field GUI.
+
+## Export one unattended run
 
 ```powershell
-.\.venv\Scripts\python.exe run_simulation.py --output output/default
+.\.venv\Scripts\python.exe run_simulation.py --output output/single-run
 .\.venv\Scripts\python.exe run_simulation.py --seed 17 --capacity 4 --output output/seed17
+.\.venv\Scripts\python.exe run_simulation.py --help
 ```
 
-Tous les paramètres de `Config` sont disponibles en ligne de commande,
-avec des tirets à la place des underscores. `--help` les liste.
-`--config fichier.json` accepte un objet avec les champs de `Config`.
-`--trace-messages` ajoute le journal détaillé des messages.
-`--no-figure` désactive seulement la génération de l'image finale.
+Every `Config` field is available as a command-line option, with hyphens replacing
+underscores. For example, `--congestion-threshold` changes the flow threshold.
+`--config settings.json` reads generation parameters, not a saved scenario.
+Explicit command-line parameters override values from that JSON object.
 
-Une exécution normale renvoie le code 0. Un arrêt incomplet renvoie le code 2
-et conserve les résultats partiels. Le chargement de scénarios sauvegardés a été
-retiré. Pour reproduire une génération, conserver les mêmes paramètres et la même
-graine avec la même version du code. Le bouton « Replay scenario » réinitialise
-le scénario courant conservé en mémoire.
+Use `--no-figure` to omit the final dashboard PNG, or `--trace-messages` to export
+the full message log. The script returns exit code 0 when everyone is delivered
+and 2 for an incomplete run. Invalid command-line input also produces code 2.
+Partial outputs retain missing dates and the reason for stopping.
 
-## Comparaison minimale individuel / partagé
+## Reproduce the capacity comparison
 
 ```powershell
-.\.venv\Scripts\python.exe run_experiments.py
+.\.venv\Scripts\python.exe run_experiments.py --output output/comparison-uturns
 .\.venv\Scripts\python.exe run_experiments.py --seeds 17 18 19 --requests 30 --output output/comparison-30
 ```
 
-Par défaut, le script compare les capacités **1 et 3** sur les graines **2026 à
-2030**, avec huit taxis et 60 demandes entre 0 et 300 s. Il génère une seule fois
-les entrées de chaque graine et les réutilise pour deux modèles ne différant que
-par leur capacité. Les exécutions sont successives et utilisent le même moteur ;
-aucune comparaison n'est ajoutée dans l'interface.
+The default experiment uses five seeds, 2026 through 2030, eight taxis and sixty
+requests appearing between 0 and 300 seconds. For each seed, the script generates
+one city, fleet and demand set, then runs two fresh models whose inputs differ
+only in capacity: one seat versus three seats. Both use the same simulation rules.
+The runs are sequential and do not require the GUI.
 
-Les options se limitent à `--seeds`, `--taxis`, `--requests`,
-`--appearance-seconds`, `--max-seconds` et `--output`.
-Les graines doivent être distinctes et positives ou nulles.
+The matched inputs are guaranteed by reusing the generated scenario, not just
+by choosing the same seed twice. `compare()` changes only `config.capacity`.
+Axes, buildings, accesses, initial taxi positions and headings, trips and
+appearance ticks remain identical within each pair. Different seeds supply
+different experimental inputs, each with its own matched pair.
 
-Dans `output/comparison/` :
+`test_compare_generates_once_and_reuses_inputs` checks this by comparing both
+exported `scenario.json` files after removing only `config.capacity`. Their full
+scenario hashes are expected to differ because capacity is included in the hash.
+Small unit tests also use fixed hand-built maps from `tests/conftest.py`; they
+test particular rules and do not all need to use the same map.
 
-| Fichier ou dossier | Contenu |
+Options are `--seeds`, `--taxis`, `--requests`, `--appearance-seconds`,
+`--max-seconds` and `--output`. Seeds must be distinct nonnegative integers.
+Without `--output`, the script writes to `output/comparison/`. Choose a fresh
+output directory to preserve previous results. The existing study with U-turns
+is in `output/comparison-uturns/`; older local exports in `output/comparison/`
+were produced before U-turns were enabled and must not be mixed with that study.
+
+| Experiment output | Contents |
 | --- | --- |
-| `study.json` | Paramètres, graines, capacités, conventions et paires exclues |
-| `comparison.csv` | Effectifs livrés, statuts, mesures des deux modes et écarts par graine |
-| `summary.csv` | Moyennes par mode, moyenne et écart-type des différences appariées, nombre de paires utilisables |
-| `seed-<graine>/individual/`, `seed-<graine>/shared/` | Exports habituels de chaque exécution, sans figure ni journal détaillé des messages |
+| `study.json` | Parameters, seeds, capacities, statistical conventions and excluded pairs |
+| `comparison.csv` | Per-seed outcomes for both capacities and their paired differences |
+| `summary.csv` | Means by capacity, mean paired difference, sample standard deviation and usable pair count |
+| `seed-<seed>/individual/`, `seed-<seed>/shared/` | Detailed exports for each run, without a dashboard or full message log |
 
-Les mesures comparées sont la distance totale, l'attente moyenne, le temps total
-moyen et le taux de distance partagée. Les écarts sont **partagé moins individuel**,
-calculés d'abord pour chaque graine. Le taux reste une fraction de 0 à 1 ; un écart
-de `0.10` correspond à dix points de pourcentage. L'écart-type est celui
-d'échantillon sur les différences, absent avec moins de deux paires utilisables.
+Differences are **shared minus individual**, calculated per seed before aggregation.
+The four compared measures are fleet distance, mean waiting time, mean total
+passenger time and shared-distance rate. Rates remain fractions in [0, 1]; 0.10
+means ten percentage points. Standard deviation is calculated across paired
+differences and is undefined with fewer than two usable pairs.
 
-Une paire incomplète reste exportée, avec ses effectifs et ses causes d'arrêt,
-mais ses écarts sont absents et elle est exclue de la synthèse. Une mesure non
-définie, par exemple une moyenne de durée sans demande, reste absente et possède
-son propre effectif de paires. Le code de sortie vaut 2 si une paire est incomplète.
-Les fichiers de comparaison sont actualisés après chaque paire terminée.
-Choisir un autre dossier de sortie pour conserver une étude précédente.
-La validation avec demi-tours utilise `output/comparison-uturns/`. Les anciens
-exports de `output/comparison/` concernent la règle sans demi-tour.
-Le changement de règle exige de recalculer les résultats avec la même version
-du moteur pour les deux capacités.
+Incomplete pairs remain exported but do not enter the comparison statistics.
+Undefined measures, such as mean passenger time with no demand, remain absent
+and have their own usable pair count. Tables are saved after each completed pair.
+Exit code 2 indicates an incomplete pair; code 0 means all pairs completed.
 
-## Organisation et parcours de lecture
+## Read the implementation
 
-| Fichier | Responsabilité |
+| File in `taxishare/` | Responsibility |
 | --- | --- |
-| `taxishare/config.py` | Paramètres, unités, constantes physiques et validations |
-| `taxishare/scenario.py` | Quatre flux aléatoires, génération et export JSON |
-| `taxishare/city.py` | Routes, accès et plus courts chemins entre cellules |
-| `taxishare/contracts.py` | Données explicites : voyages, offres, arrêts, engagements, actions |
-| `taxishare/messaging.py` | Boîtes de réception individuelles et transport des messages |
-| `taxishare/passenger.py` | Appel initial, choix, confirmation et notifications de transport |
-| `taxishare/taxi.py` | Réception, offres, revalidation, engagements et actions physiques |
-| `taxishare/planning.py` | Insertion des arrêts et contrôles des contraintes |
-| `taxishare/traffic.py` | Charges et vitesses par portion dirigée |
-| `taxishare/model.py` | Les neuf phases de l'horloge et les assertions globales |
-| `taxishare/metrics.py` | Mesures individuelles, statistiques et exports |
-| `taxishare/visualization.py` | Affichage en lecture seule |
-| `app.py` | Commandes de l'interface locale Tkinter |
-| `run_simulation.py` | Exécution d'un scénario sans interface |
-| `run_experiments.py` | Comparaisons appariées capacité 1 / 3 sur plusieurs graines |
+| `config.py` | Parameters, physical constants, input checks and detour allowance |
+| `scenario.py` | Generate and save fixed city, fleet, trip and arrival inputs |
+| `city.py` | Road adjacency, service accesses and cached shortest paths between cells |
+| `contracts.py` | Immutable trip and offer records, plus mutable physical actions |
+| `messaging.py` | Addressed inboxes and message delivery |
+| `passenger.py` | Send a request, choose an offer and react to confirmation and transport |
+| `taxi.py` | Make offers, revalidate acceptances and execute moves and service operations |
+| `planning.py` | Insert pickups and drops while checking capacity, distance budgets and promises |
+| `traffic.py` | Calculate loads and speeds independently for each travel direction |
+| `model.py` | Coordinate the clock, activation phases, observations and invariants |
+| `metrics.py` | Build passenger and taxi tables, summaries and exports |
+| `visualization.py` | Draw the current model without affecting its decisions |
 
-Pour comprendre les comportements, lire d'abord `passenger.py` et `taxi.py`,
-puis `model.py` pour leur ordre d'activation et `planning.py` pour les contraintes.
-Le modèle coordonne les phases ; il ne choisit pas un taxi à la place d'un client.
-Les identifiants, commentaires et docstrings sont en anglais conformément au cahier.
+A useful reading order is `passenger.py`, `taxi.py`, `model.py`, then `planning.py`.
+The main flow is:
 
-Pour suivre la logique du projet à la lecture du code :
+1. Generate fixed inputs. Future passengers exist as agents but remain off the
+   grid and do not reveal their requests before their appearance tick.
+2. At each boundary, finalize due actions and announce newly appearing requests.
+3. Passengers send one initial call for proposals (CFP). Taxis retain active
+   requests, build offers, and send them to each passenger.
+4. Each passenger chooses by estimated boarding start, then worst detour-budget
+   fraction among affected passengers, then taxi ID.
+5. Each taxi revalidates acceptances in request-age and passenger-ID order.
+   Confirmed passengers close their requests; rejected requests remain active.
+6. Start new physical actions, compute common traffic speeds, observe the
+   boundary and advance one interval. Finish due actions at the next boundary.
 
-1. `scenario.py` prépare la carte, les taxis et les demandes. Le scénario est
-   exporté pour conserver les entrées utilisées dans les expériences.
-2. `model.py` révèle les demandes à leur date prévue et ordonne les phases,
-   sans choisir les taxis à la place des clients.
-3. `passenger.py` envoie un CFP unique, compare les offres et attend une
-   confirmation. `taxi.py` conserve les demandes et ses engagements propres.
-4. `planning.py` essaie les insertions de montée et de descente. Il vérifie
-   capacité, budgets cumulatifs et approches déjà promises, avec un plus court
-   chemin déterministe entre chaque arrêt.
-5. `taxi.py` fait progresser chaque action pendant 0,2 s avec les vitesses
-   communes calculées dans `traffic.py`. `metrics.py` observe et exporte.
+Offers last one round and reserve no seats. A concurrent acceptance can therefore
+be rejected after another commitment changes feasibility. There is no second
+negotiation round at the same instant. Agents decide from their own state and
+received messages; the model coordinates their activation.
 
-Une acceptation peut être refusée si une confirmation précédente a rendu
-l'offre moins favorable. La demande reste active et reçoit de nouvelles offres
-au pas suivant. Il n'y a pas de seconde négociation dans le même pas.
+## Model assumptions
 
-## Règles essentielles implémentées
+- Roads are finite bidirectional axes joined by an outer frame. Buildings have
+  fixed service accesses outside intersections with three or more branches.
+- A road portion is 100 m. Free speed is 50 km/h, giving 36 ticks or 7.2 seconds.
+  Each boarding or alighting operation takes ten ticks or two seconds.
+- U-turns are allowed at every road-cell boundary with no added maneuver time.
+  A move or service operation already started must finish before another action
+  starts. Heading is not a routing constraint.
+- For a fixed stop order, one deterministic shortest path per leg is enough.
+  The planner still tries pickup/drop insertion positions and preserves the
+  relative order of previously committed stops.
+- Each passenger has a fixed direct distance D0 and cumulative extra-distance
+  allowance `min(detour_rate * D0, detour_cap_m)`, 25% capped at 400 m by default.
+  Replanning never resets travelled distance or a confirmed approach limit.
+- A seat is occupied from boarding start until alighting ends. Capacity ranges
+  from one to four; sequential future bookings may outnumber physical seats.
+- Pickup estimates use free speed and preceding service operations. Actual
+  pickup times can grow because of congestion or later inserted operations.
+- Congestion is calculated per directed portion: A to B and B to A have separate
+  loads. Speed is `free_speed / max(1, vehicle_count / K)`, with K = 2 by default.
+  Parked and service taxis are excluded. There are no physical queues or lights.
+- Runs end when everyone is delivered, at a configurable time limit, or at a
+  defensive frozen-state check. An incomplete run never counts as successful.
 
-- Ville finie à axes complets et cadre extérieur ; accès fixes hors carrefours.
-- Demi-tours autorisés à chaque frontière de cellule routière, sans durée
-  supplémentaire ; une portion ou opération engagée est toujours terminée.
-  Orientation conservée pour les triangles et les mouvements physiques.
-- Une demande par personne, persistante, avec un CFP initial copié dans chaque
-  boîte de taxi. Les agents ne lisent pas les données privées des autres.
-- Offres valables une ronde ; choix par début de montée estimé, puis score
-  maximal de budget, puis identifiant du taxi.
-- Confirmation après revalidation, priorité à l'ancienneté puis à l'identifiant.
-- Insertion préservant les anciens arrêts, les budgets cumulatifs et toutes
-  les distances d'approche promises. Une offre seule ne réserve aucune place.
-- Capacité de 1 à 4, place occupée dès le début de montée et libérée à la fin
-  de descente. Les engagements futurs peuvent être plus nombreux que les places.
-- Portion de 100 m en 7,2 s à vitesse libre ; chaque opération dure 2 s.
-- Congestion par sens, recalculée pour tous à partir du même instantané.
-- Fin normale après la dernière descente ; état figé et plafond technique
-  produisent des résultats incomplets, jamais des livraisons fictives.
+## Exported data
 
-## Tests
+| File | Contents |
+| --- | --- |
+| `scenario.json` | Generation settings and all fixed inputs, including initial headings |
+| `summary.json` | Status, stopping reason, outcomes, delivered count and unserved passengers |
+| `passengers.csv` | One row per planned passenger, including future or unfinished trips |
+| `taxis.csv` | Distance by actual occupancy and vehicle action-time accounts |
+| `timeline.csv` | Observations at processed simulation boundaries |
+| `provenance.json` | Environment versions, Python source hashes and available source-PDF hashes |
+| `dashboard.png` | City and charts, unless disabled |
+| `messages.csv` | Detailed addressed messages, only when tracing is enabled |
+
+Times are seconds and distances are metres. Unknown values are JSON `null` or
+empty CSV cells. Mean passenger outcomes use delivered trips only, with their
+count reported separately. Onboard time excludes the passenger's own boarding
+and alighting but includes other stops while they remain aboard.
+
+Shared distance is vehicle distance travelled with at least two passengers,
+counted once per metre. It is not passenger-kilometres or an emissions estimate.
+Congestion delay is separated from time lost when an arrival uses only part of
+a simulation tick. Message counts count deliveries: sixty calls sent to eight
+taxis create 480 CFP envelopes, without repeating any passenger's initial call.
+
+Replay requires identical inputs and the same model rules. A scenario hash alone
+does not identify the rules; `provenance.json` records source hashes as well.
+Changing only comments changes those file hashes but not the simulation logic.
+
+## Optional implementation checks
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Les assertions métier sont actives par défaut. Ne pas lancer Python avec `-O`
-si l'on souhaite les conserver. Les erreurs de configuration sont des exceptions
-explicites et restent contrôlées même si les assertions Python sont désactivées.
-`requirements-lock.txt` consigne les versions réellement installées sur la machine
-de validation ; `requirements.txt` fixe les deux dépendances principales.
+Tests check movement and service boundaries, cumulative budgets, offer bounds,
+seat reuse, messages, directed congestion, replay and exports. They validate
+implementation behavior on selected cases; the paired experiments provide the
+outcomes to analyze. Assertions are enabled by default. Do not use Python's `-O`
+option if you want to retain them.
 
-## Fichiers exportés
+## Scope and detailed notes
 
-| Fichier | Contenu |
-| --- | --- |
-| `scenario.json` | Configuration, axes, bâtiments, accès, flotte, orientations, voyages et dates |
-| `summary.json` | Statut, cause d'arrêt, mesures globales, effectifs et clients non livrés |
-| `passengers.csv` | Une ligne par client prévu, y compris futur ou non livré |
-| `taxis.csv` | Une ligne par taxi, distances par occupation et décomposition des temps |
-| `timeline.csv` | Observation globale à chaque frontière de pas traitée |
-| `provenance.json` | Versions de l'environnement et empreintes du code et des PDF sources |
-| `dashboard.png` | Carte et graphiques de l'exécution |
-| `messages.csv` | Journal optionnel des messages, activé avec `--trace-messages` |
+The model uses a local insertion policy, not a global fleet optimizer. It does
+not model transfers between taxis, walking, outside traffic or emissions. Five
+seeds under one main configuration support a limited comparison, not a general
+claim about real cities. The academic report is a separate deliverable.
 
-Les durées et dates sont en secondes, les distances en mètres. Les valeurs
-inconnues sont `null` en JSON et vides en CSV. Les moyennes de voyages terminés
-portent uniquement sur les clients livrés, avec leur effectif affiché.
-Les compteurs de messages comptent les livraisons dans les boîtes : 60 CFP
-diffusés à 8 taxis donnent 480 messages CFP, sans répétition des appels.
+Detailed project notes are retained in French:
 
-Les exports écrivent dans le dossier choisi. Utiliser des dossiers distincts
-pour conserver plusieurs exécutions.
-
-## Documentation de conformité
-
-- [Décisions techniques](docs/technical-decisions.md)
-- [Correspondance entre cahier, code et tests](docs/rules-coverage.md)
-- [Vérifications effectuées et résultats](docs/validation.md)
-
-La comparaison individuel/partagé est limitée au script décrit ci-dessus.
-Le multi-hop entre taxis et le modèle d'émissions restent hors périmètre.
-Les distances ne sont pas des quantités de CO2. Le rapport d'analyse demandé
-par le professeur demeure un livrable distinct ; les exports fournissent les
-données nécessaires à sa préparation.
+- [Technical decisions](docs/technical-decisions.md)
+- [Rules and implementation checks](docs/rules-coverage.md)
+- [Executed validation and results](docs/validation.md)

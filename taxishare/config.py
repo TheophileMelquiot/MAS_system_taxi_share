@@ -19,6 +19,11 @@ EPSILON = 1e-7  # Numerical tolerance, never an extra detour allowance.
 
 @dataclass(frozen=True)
 class Config:
+    """Validated generation, service and stopping parameters for one model.
+
+    A seed fixes the generated inputs for a given code version. Capacity limits
+    physically occupied seats, not the total number of future bookings.
+    """
     width: int = 21
     height: int = 21
     horizontal_axes: int = 5
@@ -27,13 +32,13 @@ class Config:
     buildings: int = 32
     taxis: int = 8
     requests: int = 60
-    appearance_seconds: float = 300.0
+    appearance_seconds: float = 300.0  # Requests may appear until this time.
     capacity: int = 3
-    congestion_threshold: float = 2.0
+    congestion_threshold: float = 2.0  # Flow threshold K, not an entry barrier.
     detour_rate: float = 0.25
     detour_cap_m: float = 400.0
     seed: int = 2026
-    max_seconds: float = 7200.0
+    max_seconds: float = 7200.0  # Stop incomplete if service is still unfinished.
 
     def __post_init__(self):
         """Reject impossible inputs instead of silently changing the scenario."""

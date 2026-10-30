@@ -1,8 +1,9 @@
-"""Pure constrained insertion, with no mutations or reads of other agents.
+"""Evaluate constrained insertions on a copied taxi snapshot.
 
 For each pickup/drop insertion, follow one shortest path between each stop.
 Existing stops keep their relative order. A locked move/operation is accounted
-for before any change. This is not a global fleet optimizer.
+for before any change. City may cache paths, but no agent state is changed or
+read here. The search selects one taxi's plan, not a global fleet assignment.
 """
 
 from dataclasses import dataclass
@@ -38,6 +39,7 @@ def plan_key(plan: Plan):
 
 
 class InsertionPlanner:
+    """Choose the shortest feasible insertion, with deterministic tie-breaking."""
     def __init__(self, city):
         self.city = city
 
@@ -88,6 +90,12 @@ class InsertionPlanner:
         return not occupied
 
     def _route(self, context, candidate, trips, stops, best, promised):
+        """Evaluate one stop order, or return None when a bound is exceeded.
+
+        Distances belong to different accounts: total is taxi travel, ridden
+        is per passenger, and pickup_distances protects each pending approach.
+        All start from the same snapshot, so rejected trials have no effects.
+        """
         ridden = dict(context.ridden)
         # Replanning cannot erase the rest of a road portion already entered.
         # Everyone currently aboard travels this prefix before any new stop.
@@ -101,7 +109,8 @@ class InsertionPlanner:
         pickup_distances, pickup_seconds = {}, {}
         legs = []
         # With free U-turns, arrival direction cannot affect the next leg.
-        # Shortest legs minimize every upper-bound resource for this stop order.
+        # With free-speed ETA and distance caps, shortest legs minimize every
+        # upper-bound resource. Predicted traffic or turn costs are not used.
         for stop in stops:
             cells = self.city.path_to(cell, stop.cell)
             if cells is None:
@@ -110,6 +119,7 @@ class InsertionPlanner:
             total += distance
             seconds += distance / FREE_SPEED_MPS
             if best is not None and total > best.distance_m + EPSILON:
+                # Later legs cannot reduce distance; this order cannot win.
                 return None
             for pid in occupied:
                 # Preserve distance already ridden, including the locked prefix.
@@ -130,6 +140,7 @@ class InsertionPlanner:
             else:
                 occupied.remove(pid)
             legs.append(Leg(stop, cells))
+            # Every service takes time even when consecutive stops share a cell.
             seconds += OPERATION_TICKS * STEP_SECONDS
             cell = stop.cell
         pid = candidate.passenger_id
