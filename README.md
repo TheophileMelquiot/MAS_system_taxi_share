@@ -1,7 +1,8 @@
 # TaxiShare : simulation multi-agents avec Mesa
 
 Simulation locale de taxis partagés, implémentée à partir du cahier des règles
-U01 à U71 et des clarifications de cette conversation. Les agents `Passenger`
+U01 à U71 et des clarifications de cette conversation, dont la simplification
+du 30 octobre 2026 autorisant les demi-tours. Les agents `Passenger`
 et `Taxi` sont des agents Mesa. Ils décident par messages adressés, avec une
 horloge commune de 0,2 seconde et des actions physiques indépendantes.
 
@@ -103,6 +104,10 @@ définie, par exemple une moyenne de durée sans demande, reste absente et poss�
 son propre effectif de paires. Le code de sortie vaut 2 si une paire est incomplète.
 Les fichiers de comparaison sont actualisés après chaque paire terminée.
 Choisir un autre dossier de sortie pour conserver une étude précédente.
+La validation avec demi-tours utilise `output/comparison-uturns/`. Les anciens
+exports de `output/comparison/` concernent la règle sans demi-tour.
+Le changement de règle exige de recalculer les résultats avec la même version
+du moteur pour les deux capacités.
 
 ## Organisation et parcours de lecture
 
@@ -110,7 +115,7 @@ Choisir un autre dossier de sortie pour conserver une étude précédente.
 | --- | --- |
 | `taxishare/config.py` | Paramètres, unités, constantes physiques et validations |
 | `taxishare/scenario.py` | Quatre flux aléatoires, génération et export JSON |
-| `taxishare/city.py` | Routes, accès et graphe orienté sans demi-tour |
+| `taxishare/city.py` | Routes, accès et plus courts chemins entre cellules |
 | `taxishare/contracts.py` | Données explicites : voyages, offres, arrêts, engagements, actions |
 | `taxishare/messaging.py` | Boîtes de réception individuelles et transport des messages |
 | `taxishare/passenger.py` | Appel initial, choix, confirmation et notifications de transport |
@@ -138,7 +143,8 @@ Pour suivre la logique du projet à la lecture du code :
 3. `passenger.py` envoie un CFP unique, compare les offres et attend une
    confirmation. `taxi.py` conserve les demandes et ses engagements propres.
 4. `planning.py` essaie les insertions de montée et de descente. Il vérifie
-   capacité, orientations, budgets cumulatifs et approches déjà promises.
+   capacité, budgets cumulatifs et approches déjà promises, avec un plus court
+   chemin déterministe entre chaque arrêt.
 5. `taxi.py` fait progresser chaque action pendant 0,2 s avec les vitesses
    communes calculées dans `traffic.py`. `metrics.py` observe et exporte.
 
@@ -149,7 +155,9 @@ au pas suivant. Il n'y a pas de seconde négociation dans le même pas.
 ## Règles essentielles implémentées
 
 - Ville finie à axes complets et cadre extérieur ; accès fixes hors carrefours.
-- Position et orientation conservées ; aucun demi-tour, même à l'arrêt.
+- Demi-tours autorisés à chaque frontière de cellule routière, sans durée
+  supplémentaire ; une portion ou opération engagée est toujours terminée.
+  Orientation conservée pour les triangles et les mouvements physiques.
 - Une demande par personne, persistante, avec un CFP initial copié dans chaque
   boîte de taxi. Les agents ne lisent pas les données privées des autres.
 - Offres valables une ronde ; choix par début de montée estimé, puis score

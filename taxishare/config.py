@@ -1,7 +1,8 @@
 """Central configuration and physical constants (SI units).
 
 Business rules are deliberately not configurable switches. In particular,
-U-turns, passenger transfers, abandonment and polling delays are not options.
+U-turns are allowed at cell boundaries without an added maneuver duration.
+Passenger transfers, abandonment and polling delays are not options.
 """
 
 from dataclasses import dataclass, asdict

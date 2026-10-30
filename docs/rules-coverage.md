@@ -1,6 +1,7 @@
 # Correspondance entre le cahier, le code et les vérifications
 
-Référence : cahier PDF de 48 pages, décisions consolidées jusqu'à U71.
+Référence : cahier PDF de 48 pages, décisions consolidées jusqu'à U71, actualisées par la décision utilisateur
+du 30 octobre 2026 autorisant les demi-tours et le routage entre cellules.
 Les numéros ci-dessous sont les sections du cahier. Les tests cités se trouvent
 dans `tests/test_scenario.py` et `tests/test_simulation.py`.
 
@@ -15,19 +16,19 @@ comme des contraintes actuelles.
 | 2. Objectif et périmètre | `planning.py`, `taxi.py` : multi-passagers, insertions, un taxi par voyage, un seul monde | Partage, capacité réutilisable, cas par défaut |
 | 3. Plateforme et outils | `Model`, `Agent`, `AgentSet`, `MultiGrid`, `DataCollector` ; interface Tk locale | Version Mesa installée inspectée, tests et ouverture de l'interface |
 | 4. Paramètres et invariants | `Config` et `model.assert_invariants` | Configurations invalides paramétrées, assertions à chaque pas |
-| 5. Carte | `draw_axes`, `City` : axes complets, cadre, espacement | Génération par défaut, coins, états orientés |
+| 5. Carte | `draw_axes`, `City` : axes complets, cadre, espacement | Génération par défaut, coins, connexité et accès |
 | 6. Bâtiments et accès | Tirage sans remise, accès lexicographique fixe, hors carrefours | Accès et placements invalides, dépassement des emplacements disponibles |
-| 7. Orientation | `successors`, `Move`, orientation conservée | Demi-tours interdits, coins, action en cours préservée |
-| 8. Routage et validation | BFS orientée, orientations d'arrivée, parcours inverse depuis les accès | Impasses refusées ; anneau admis sans exiger toutes les orientations |
+| 7. Orientation | `Move`, orientation visuelle conservée, voisins routiers | Demi-tours après arrêt et frontière de cellule ; portion engagée préservée |
+| 8. Routage et validation | `path_to`, BFS entre cellules en cache, `validate_accessibility` | Chemins directs, arrêt sur place, impasse admise, réseau déconnecté refusé |
 | 9. Voyages | `generate` : origine uniforme, destination conditionnelle, accès distincts | Rejet d'accès identiques et validation de chaque scénario |
 | 10. Apparitions | Calendrier entier de 0 à la borne inclusive ; publication à échéance | Demande future empêchant l'arrêt et invisible aux taxis avant échéance |
 | 11. Flotte initiale | Positions distinctes hors carrefours, orientations d'arrivée légales | Génération, nombre excessif refusé, placement invalide refusé |
 | 12. Reproductibilité | Quatre flux SHA-256, scénario JSON complet exporté ; chargement retiré à la demande utilisateur | Isolation des flux, export et génération identique, rejeu en mémoire |
 | 13. Capacité | Occupation prévisionnelle et réelle, réservations distinctes des places | Trois engagements avec capacité deux, réutilisation capacité un, capacité quatre |
-| 14. D0 personnel | `reference_distance` sur la meilleure orientation, sauvegardé dans `Trip` | Même origine/destination avec trajet réel défavorisé par l'orientation |
+| 14. D0 personnel | `reference_distance` entre accès, sauvegardé dans `Trip` | Distance directe indépendante du sens initial ; référence nulle sur place |
 | 15. Budget à bord | `PlanningContext.ridden`, budgets cumulés, contrôle par client | Budget déjà consommé non réinitialisé, budget nul compatible avec partage exact |
 | 16. Protection d'approche | Odomètre de confirmation et limite conservés pour chaque engagement | Approche consommée non réinitialisée, assertion à la montée |
-| 17. Construction des offres | Insertion pickup/drop sans permutation des anciens arrêts ; distance minimale | Capacité réutilisable, orientation alternative, tests de cumul |
+| 17. Construction des offres | Insertion pickup/drop sans permutation des anciens arrêts ; distance minimale | Capacité réutilisable, approche directe avec demi-tour, budgets et préfixe cumulés |
 | 18. Demandes et messages | `MessageBus`, méthodes séparées des agents, CFP unique | Boîtes indépendantes, appels simultanés, demandes persistantes |
 | 19. Validité des offres | Identité incluant le tick, expiration à clôture | Acceptation périmée refusée, offres retirées après ronde |
 | 20. Choix client | Début estimé, score maximal, identifiant | Test de classement, vitesse libre et reste d'opération |
@@ -35,7 +36,7 @@ comme des contraintes actuelles.
 | 22. Horloge et phases | `model.step` délègue neuf phases ; compteur entier | Frontières exactes, absence de double progression, actions indépendantes |
 | 23. Durées et arrêts | 36 pas libres, 10 par opération ; descente avant montée | Course de 40 s, place libérée après descente, opération non redémarrée |
 | 24. Congestion | `traffic_snapshot`, puis `advance_action` sur les mêmes vitesses | Trois taxis même sens, sens opposé, ordre d'activation inversé |
-| 25. Taxis libres | Pas d'action sans engagement, position et orientation conservées | État figé sans repositionnement, temps libre |
+| 25. Taxis libres | Pas d'action sans engagement, position et orientation conservées | Prise en charge sur place avec inversion du sens initial ; diagnostic de gel défensif |
 | 26. Fin et interruptions | Livraison après descente, état figé, plafond | Zéro demande, demande future, fin normale, gel et plafond incomplets |
 | 27. Mesures clients | `passenger_rows` : dates, durées, distances, valeurs absentes | Identité des temps, export partiel, attente réellement nulle |
 | 28. Mesures taxis | Catégories exclusives 0 à capacité, taux par sommes | Conservation des distances et taux de partage |

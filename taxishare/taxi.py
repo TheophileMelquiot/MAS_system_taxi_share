@@ -113,11 +113,11 @@ class Taxi(Agent):
 
     def planning_context(self):
         """Freeze the current physical action; only its future suffix can change."""
-        anchor = (self.pos, self.heading)
+        anchor = self.pos
         prefix, seconds = 0.0, 0.0
         occupied = set(self.occupied)
         if isinstance(self.action, Move):
-            anchor = (self.action.target, self.action.heading)
+            anchor = self.action.target
             prefix = max(0.0, CELL_METERS - self.action.progressed_m)
             seconds = prefix / FREE_SPEED_MPS
         elif isinstance(self.action, Operation):
@@ -169,7 +169,7 @@ class Taxi(Agent):
     def _start_move(self, leg):
         target = leg.cells[0]
         heading = (target[0] - self.pos[0], target[1] - self.pos[1])
-        assert (target, heading) in self.model.city.successors((self.pos, self.heading)), "Illegal move or U-turn"
+        assert target in self.model.city.adjacent[self.pos], "Illegal road move"
         self.legs[0] = replace(leg, cells=leg.cells[1:])
         self.action = Move(self.pos, target, heading)
 

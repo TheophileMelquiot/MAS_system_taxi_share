@@ -77,8 +77,11 @@ def test_no_requests_and_null_statistics(ring_scenario):
     assert result["distance_empty_m"] == 0
 
 
-def test_frozen_state_is_incomplete_not_abandonment(ring_scenario):
-    model = TaxiShareModel(ring_scenario(fleet=((0, (1, 0), (-1, 0)),))).run_to_end()
+def test_frozen_state_is_incomplete_not_abandonment(ring_scenario, monkeypatch):
+    model = TaxiShareModel(ring_scenario(fleet=((0, (1, 0), (-1, 0)),)))
+    # Exercise the defensive diagnostic independently of initial orientation.
+    monkeypatch.setattr(model.planner, "best_plan", lambda *args: (None, "no_feasible_offer"))
+    model.run_to_end()
     assert model.stop_reason == "frozen_no_feasible_offer"
     assert model.time_seconds == 0
     assert model.passengers[0].state == PassengerState.WAITING
@@ -174,7 +177,7 @@ def test_capacity_is_reusable_and_commitments_can_exceed_capacity(ring_scenario)
     trip_a = Trip(0, (1, 0), (3, 0), 0, 200, 50)
     trip_b = Trip(1, (3, 0), (5, 0), 0, 200, 50)
     commitment = Commitment(trip_a, 0, 0)
-    context = PlanningContext(((1, 0), (1, 0)), 0, 0, 0, 0, frozenset(), {0: 0},
+    context = PlanningContext((1, 0), 0, 0, 0, 0, frozenset(), {0: 0},
         {0: commitment}, (Stop(0, True, (1, 0)), Stop(0, False, (3, 0))), 1)
     plan, _ = InsertionPlanner(city).best_plan(context, trip_b)
     assert plan is not None
@@ -185,7 +188,7 @@ def test_cumulative_budget_and_approach_protection(ring_scenario):
     city = ring_scenario().city()
     original = Trip(0, (1, 0), (5, 0), 0, 400, 100)
     candidate = Trip(1, (3, 0), (5, 0), 0, 200, 50)
-    context = PlanningContext(((3, 0), (1, 0)), 20, 0, 0, 300, frozenset({0}), {0: 301},
+    context = PlanningContext((3, 0), 20, 0, 0, 300, frozenset({0}), {0: 301},
         {0: Commitment(original, 0, 100)}, (Stop(0, False, (5, 0)),), 2)
     plan, _ = InsertionPlanner(city).best_plan(context, candidate)
     assert plan is None  # 301 already ridden + 200 remaining exceeds 500.
@@ -308,14 +311,16 @@ def test_acceptance_keeps_announced_offer_bounds(ring_scenario):
     assert model.tick == 1 and model.passengers[1].initial_calls == 1
 
 
-def test_alternative_approach_orientation_can_make_trip_feasible():
+def test_direct_approach_can_reverse_after_pickup():
     from taxishare.city import City
     city = City(7, 7, (0, 3, 6), (0, 3, 6))
     trip = Trip(0, (1, 0), (2, 0), 0, 100, 25)
-    context = PlanningContext(((4, 0), (-1, 0)), 0, 0, 0, 0, frozenset(), {}, {}, (), 3)
+    context = PlanningContext((4, 0), 0, 0, 0, 0, frozenset(), {}, {}, (), 3)
     plan, _ = InsertionPlanner(city).best_plan(context, trip)
     assert plan is not None
-    assert plan.candidate_approach_m > 300  # A direct westbound approach cannot serve this trip.
+    assert plan.candidate_approach_m == 300
+    assert plan.legs[0].cells == ((3, 0), (2, 0), (1, 0))
+    assert plan.legs[1].cells == ((2, 0),)
     assert plan.candidate_ride_m == 100
 
 
@@ -325,3 +330,56 @@ def test_four_passengers_and_zero_actual_wait(ring_scenario):
     assert model.status == "complete"
     assert model.taxis[0].distances[4] == pytest.approx(400)
     assert min(p["waiting_seconds"] for p in passenger_rows(model)) == 0
+
+
+def test_parked_taxi_can_reverse_to_serve_same_cell_pickup(ring_scenario):
+    model = TaxiShareModel(ring_scenario(fleet=((0, (1, 0), (-1, 0)),))).run_to_end()
+    assert model.status == "complete"
+    assert passenger_rows(model)[0]["board_start_seconds"] == 0
+    assert model.taxis[0].odometer_m == pytest.approx(400)
+
+
+def test_reversal_waits_for_locked_portion_and_preserves_prefix(ring_scenario):
+    model = TaxiShareModel(ring_scenario(requests=()))
+    taxi = model.taxis[0]
+    action = Move((0, 0), (1, 0), (1, 0), 25)
+    taxi.action = action
+    context = taxi.planning_context()
+    assert context.anchor == (1, 0)
+    assert context.prefix_distance_m == 75
+    trip = Trip(0, (0, 0), (1, 0), 0, 100, 25)
+    plan, _ = model.planner.best_plan(context, trip)
+    assert plan.candidate_approach_m == 175
+    taxi.legs = list(plan.legs)
+    taxi.start_action()
+    assert taxi.action is action and taxi.action.progressed_m == 25
+    action.progressed_m = 100
+    taxi.finalize_action()
+    taxi.start_action()
+    assert taxi.action.origin == (1, 0)
+    assert taxi.action.target == (0, 0)
+    assert taxi.action.heading == (-1, 0)
+
+
+@pytest.mark.parametrize("field", ["candidate_approach_m", "candidate_pickup_seconds",
+                                   "candidate_ride_m", "budget_score"])
+def test_revalidation_preserves_each_announced_bound(ring_scenario, field):
+    city = ring_scenario().city()
+    trip = Trip(0, (1, 0), (5, 0), 0, 400, 100)
+    context = PlanningContext((0, 0), 0, 0, 0, 0, frozenset(), {}, {}, (), 3)
+    planner = InsertionPlanner(city)
+    plan, _ = planner.best_plan(context, trip)
+    assert planner.best_plan(context, trip, plan)[0] == plan
+    stricter = replace(plan, **{field: getattr(plan, field) - 1})
+    assert planner.best_plan(context, trip, stricter)[0] is None
+
+
+def test_locked_prefix_counts_against_onboard_passenger_budget(ring_scenario):
+    original = Trip(0, (1, 0), (3, 0), 0, 200, 50)
+    candidate = Trip(1, (2, 0), (3, 0), 0, 100, 25)
+    context = PlanningContext((2, 0), 0, 75, 75 / FREE_SPEED_MPS, 100,
+        frozenset({0}), {0: 100}, {0: Commitment(original, 0, 0)},
+        (Stop(0, False, (3, 0)),), 2)
+    planner = InsertionPlanner(ring_scenario().city())
+    assert planner.best_plan(context, candidate)[0] is None  # 100 + 75 + 100 > 250.
+    assert planner.best_plan(replace(context, prefix_distance_m=0), candidate)[0] is not None

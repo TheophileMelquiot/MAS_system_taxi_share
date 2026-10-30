@@ -49,9 +49,9 @@ par agent ni de délai de négociation ajouté.
 La carte Mesa positionne un taxi sur l'origine de la portion jusqu'à sa fin.
 L'action `Move` conserve le point d'arrivée et la progression continue ; le
 rendu interpole sa position. La finalisation déplace l'agent dans `MultiGrid`.
-L'orientation logique reste celle de l'arrivée précédente tant que la portion
-en cours n'est pas terminée. Le planificateur utilise son orientation d'arrivée
-future, sans interrompre cette portion.
+L'orientation affichée à l'arrêt reste celle de l'arrivée précédente. Pendant
+le mouvement, le triangle suit la direction de `Move`. Le planificateur utilise
+la cellule d'arrivée future, sans interrompre la portion déjà engagée.
 
 Un passager futur n'est pas sur la grille. Il apparaît à son accès, quitte la
 grille au début de montée et réapparaît à destination à la fin de descente.
@@ -60,16 +60,22 @@ Il reste agent Mesa pendant tout ce cycle. Un voyage correspond toujours à un t
 ## Routage, accès et départages
 
 Les coordonnées sont des couples entiers `(x, y)`, avec `(0, 0)` en bas à gauche.
-Une orientation est un vecteur cardinal d'arrivée `(dx, dy)`.
-Un état routier est `(cellule, orientation)` ; la direction opposée est interdite.
-Aux coins, le virage à 90 degrés est une transition normale.
+Une orientation est un vecteur cardinal d'arrivée `(dx, dy)`, conservé pour
+l'affichage et les mouvements physiques. Le routage utilise uniquement les
+cellules. Les demi-tours sont autorisés à toute frontière de cellule routière,
+y compris après un arrêt et aux intersections, sans temps de manoeuvre ajouté.
+Une portion ou une opération déjà engagée reste verrouillée jusqu'à sa fin.
 
-La recherche en largeur trouve les plus courts chemins en nombre de portions.
-Pour chaque arrêt, elle conserve un chemin par orientation d'arrivée atteignable.
-Les orientations sont combinées au fil du programme, sans réinitialisation aux
-arrêts. Un chemin d'approche plus long peut rendre le trajet à bord admissible.
-Les chemins plus longs ayant les mêmes états de départ et d'arrivée ne sont
-pas explorés : ils n'améliorent ni la distance, ni les contraintes cumulatives.
+`City.path_to` retourne un seul plus court chemin déterministe, sans inclure la
+cellule de départ. Il retourne un tuple vide pour un arrêt sur place, `None`
+pour une destination routière inaccessible et une erreur pour une cellule
+hors réseau. La recherche en largeur conserve un arbre par cellule de départ,
+réutilisé pour toutes les destinations, puis met les chemins en cache.
+
+D0 est la distance du plus court chemin entre les accès, fixée une fois par
+voyage. Sur le réseau actuel, elle est identique à l'ancienne référence utilisant
+la meilleure orientation de départ. Le budget reste min(25 % de D0, 400 m),
+avec les paramètres configurables existants.
 
 L'ordre stable des voisins est nord, est, sud, ouest. Les chemins de même
 longueur sont ainsi reproductibles. Entre programmes admissibles, le taxi
@@ -78,14 +84,20 @@ le programme précédent étant commun à toutes les insertions), puis utilise
 l'ordre lexicographique des identifiants d'arrêts et des chemins.
 Les accès fixes de bâtiments sont choisis par minimum lexicographique `(x, y)`.
 
-La validation inverse du graphe vérifie que chaque état légal peut atteindre
-chaque accès et dispose d'une continuation. Il n'est pas exigé d'atteindre
-toutes les orientations possibles d'un accès.
+`City.validate_accessibility` vérifie la connexité du réseau bidirectionnel,
+l'existence d'un voisin pour chaque cellule et l'appartenance des accès au
+réseau. Une impasse permet désormais de repartir dans le sens opposé. Le cadre
+et les axes complets restent la géométrie du générateur ; ils ne sont pas retirés.
 
-Le planificateur conserve plusieurs états de recherche si leurs distances
-individuelles diffèrent. Éliminer un état uniquement parce que sa distance
-totale est plus longue pourrait perdre une solution protégeant un passager.
-Seuls les états ayant les mêmes ressources sont fusionnés.
+Pour chaque insertion, `_route` parcourt une seule séquence de plus courts
+chemins. Avec des demi-tours libres, la direction d'arrivée n'influence plus
+l'étape suivante. Les distances, temps estimés et contraintes sont des coûts
+positifs ou des plafonds : allonger une étape ne peut améliorer une ressource.
+`Label`, `_visit` et `_prune` sont supprimés. Les comptes individuels, les
+approches promises, la capacité et les bornes de revalidation restent vérifiés.
+La recherche des positions d'insertion et l'ordre relatif des anciens arrêts
+restent inchangés. Cette simplification repose sur l'estimation à vitesse libre,
+sans coût de virage, fenêtre horaire minimale ni évitement de congestion.
 
 ## Engagements et revalidation
 
@@ -180,7 +192,7 @@ source disponibles et les versions des principales bibliothèques. L'empreinte
 du scénario utilise une sérialisation JSON canonique distincte.
 
 L'insertion demeure une politique locale, sans optimum global garanti. Son coût
-augmente avec le nombre d'engagements et d'orientations possibles. Aucun plafond
+augmente avec le nombre d'engagements et d'insertions possibles. Aucun plafond
 silencieux du nombre d'engagements ou des solutions n'est ajouté pour accélérer.
 L'occupation moyenne et le taux de clients ayant partagé ne sont pas ajoutés :
 la mesure retenue est la distance de taxi parcourue avec au moins deux personnes.
@@ -206,9 +218,26 @@ d'échantillon. Les paires incomplètes sont exclues ; chaque mesure conserve so
 effectif utilisable et les valeurs inconnues restent absentes. Aucune nouvelle
 mesure de satisfaction, de congestion ou d'émissions n'est ajoutée.
 
-L'interdiction des demi-tours reste active. Un éventuel changement serait un
-chantier séparé : routage sur les positions, orientation conservée pour l'affichage,
-adaptation du planificateur, de la validation et des tests. Il faudrait conserver
-les budgets et les protections des engagements et refaire les comparaisons avec
-les nouvelles règles. Cette évolution n'est ni nécessaire à la comparaison actuelle,
-ni implémentée par cette simplification.
+## Demi-tours et simplification du routage, 30 octobre 2026
+
+L'utilisateur autorise la seconde approche après analyse du code : remplacer
+le routage orienté et les alternatives du planificateur par un routage entre
+cellules. Cette décision remplace l'interdiction U46 et la partie orientée du
+contrôle U67 ; elle simplifie U49 sans changer D0 sur les cartes actuelles.
+
+La congestion reste calculée par portion dirigée dans `traffic_snapshot` :
+A vers B et B vers A ont des charges et vitesses indépendantes. Autoriser un
+demi-tour n'efface aucune distance déjà parcourue et ne change pas le sens
+d'une action `Move` en cours. Les offres continuent à estimer les temps à
+vitesse libre ; la congestion s'applique à l'exécution physique.
+
+Les orientations initiales et leur tirage sont conservés pour les triangles,
+le format du scénario et les mêmes entrées aléatoires. Aucun changement du
+générateur ni du schéma JSON n'est nécessaire. L'empreinte du scénario seule
+ne distingue donc pas les deux règles ; les empreintes du code dans
+`provenance.json` identifient le moteur utilisé.
+
+Le commit local `d488533` conserve l'état avant cette migration. Le routage et
+le planificateur sont plus simples ; aucun facteur d'accélération n'est affirmé.
+Les résultats sans demi-tour restent historiques. Les nouvelles comparaisons
+utilisent `output/comparison-uturns/` pour préserver `output/comparison/`.

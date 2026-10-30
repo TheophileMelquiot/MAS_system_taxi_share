@@ -103,9 +103,8 @@ class Scenario:
                     or type(r.appearance_tick) is not int
                     or not 0 <= r.appearance_tick <= c.appearance_ticks):
                 raise ValueError(f"Invalid request: {r}")
-        # Geometric connectivity alone is insufficient: a taxi must still reach
-        # every access without reversing its incoming direction after a stop.
-        city.validate_oriented_accessibility()
+        # Bidirectional connected roads allow every taxi to reach every access.
+        city.validate_accessibility()
         return city
 
     def to_dict(self):

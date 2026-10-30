@@ -1,13 +1,13 @@
 """Pure constrained insertion, with no mutations or reads of other agents.
 
-For each pickup/drop insertion, search shortest legal paths for every arrival
-heading. Existing stops keep their relative order. A locked move/operation is
-accounted for before any change. This is not a global fleet optimizer.
+For each pickup/drop insertion, follow one shortest path between each stop.
+Existing stops keep their relative order. A locked move/operation is accounted
+for before any change. This is not a global fleet optimizer.
 """
 
 from dataclasses import dataclass
-from .city import State
-from .config import CELL_METERS, FREE_SPEED_MPS, EPSILON
+from .city import Cell
+from .config import CELL_METERS, FREE_SPEED_MPS, EPSILON, OPERATION_TICKS, STEP_SECONDS
 from .contracts import Commitment, Leg, Plan, Stop, Trip
 
 
@@ -15,11 +15,11 @@ from .contracts import Commitment, Leg, Plan, Stop, Trip
 class PlanningContext:
     """Taxi snapshot used for hypothetical plans, never the live taxi state.
 
-    The anchor is the position/heading after the action already in progress.
+    The anchor is the cell reached after the action already in progress.
     Its remaining distance and duration are carried by prefix_distance_m and
     locked_seconds. Existing commitments retain their original promises.
     """
-    anchor: State
+    anchor: Cell
     now_seconds: float
     prefix_distance_m: float
     locked_seconds: float
@@ -29,23 +29,6 @@ class PlanningContext:
     commitments: dict[int, Commitment]
     stops: tuple[Stop, ...]
     capacity: int
-
-
-@dataclass
-class Label:
-    """One possible partial route and its per-passenger resource accounting.
-
-    Different arrival headings can make different later stops feasible. Keep
-    those alternatives until all stops and passenger constraints are checked.
-    """
-    state: State
-    distance_m: float
-    seconds: float
-    occupied: frozenset[int]
-    ridden: dict[int, float]
-    pickup_distances: dict[int, float]
-    pickup_seconds: dict[int, float]
-    legs: tuple[Leg, ...]
 
 
 def plan_key(plan: Plan):
@@ -81,10 +64,10 @@ class InsertionPlanner:
                     continue
                 # Capacity is checked before routing because an impossible stop
                 # order stays impossible regardless of the paths between stops.
-                for plan in self._route(context, candidate, trips, stops, best, promised):
-                    if best is None or plan_key(plan) < plan_key(best):
-                        best = plan
-        return best, None if best else "no_feasible_insertion_under_capacity_distance_orientation_and_promises"
+                plan = self._route(context, candidate, trips, stops, best, promised)
+                if plan is not None and (best is None or plan_key(plan) < plan_key(best)):
+                    best = plan
+        return best, None if best else "no_feasible_insertion_under_capacity_distance_and_promises"
 
     @staticmethod
     def _valid_stop_order(stops, initial, capacity):
@@ -112,83 +95,54 @@ class InsertionPlanner:
             ridden[pid] = ridden.get(pid, 0) + context.prefix_distance_m
         if any(ridden.get(pid, 0) > t.reference_m + t.budget_m + EPSILON for pid, t in trips.items()):
             return
-        labels = [Label(context.anchor, context.prefix_distance_m, context.locked_seconds,
-                        context.occupied, ridden, {}, {}, ())]
+        cell = context.anchor
+        total, seconds = context.prefix_distance_m, context.locked_seconds
+        occupied = set(context.occupied)
+        pickup_distances, pickup_seconds = {}, {}
+        legs = []
+        # With free U-turns, arrival direction cannot affect the next leg.
+        # Shortest legs minimize every upper-bound resource for this stop order.
         for stop in stops:
-            following = []
-            for label in labels:
-                for cells, heading in self.city.paths_to(label.state, stop.cell):
-                    distance = len(cells) * CELL_METERS
-                    if best and label.distance_m + distance > best.distance_m + EPSILON:
-                        continue
-                    advanced = self._visit(context, label, stop, cells, heading, trips)
-                    if advanced is not None:
-                        following.append(advanced)
-            labels = self._prune(following)
-            if not labels:
-                return
-        pid = candidate.passenger_id
-        for label in labels:
-            # The score concerns the most affected passenger, including the new
-            # candidate. A zero budget is feasible only with zero positive detour.
-            score = max((max(0.0, label.ridden.get(i, 0) - t.reference_m) / t.budget_m
-                         if t.budget_m else 0.0) for i, t in trips.items())
-            plan = Plan(label.legs, label.distance_m, label.pickup_distances[pid],
-                        context.now_seconds + label.pickup_seconds[pid], label.ridden[pid], score)
-            if promised is not None and (
-                    plan.candidate_approach_m > promised.candidate_approach_m + EPSILON
-                    or plan.candidate_pickup_seconds > promised.candidate_pickup_seconds + EPSILON
-                    or plan.candidate_ride_m > promised.candidate_ride_m + EPSILON
-                    or plan.budget_score > promised.budget_score + EPSILON):
-                # A concurrent confirmation changed the plan too much. Reject
-                # this acceptance; the next tick offers the updated conditions.
-                continue
-            yield plan
-
-    @staticmethod
-    def _visit(context, label, stop, cells, heading, trips):
-        distance = len(cells) * CELL_METERS
-        total = label.distance_m + distance
-        seconds = label.seconds + distance / FREE_SPEED_MPS
-        ridden = dict(label.ridden)
-        for pid in label.occupied:
-            # Charge this leg to each person aboard, not just to the taxi.
-            # Adding an insertion never resets distance already travelled.
-            ridden[pid] = ridden.get(pid, 0) + distance
-            trip = trips[pid]
-            if ridden[pid] > trip.reference_m + trip.budget_m + EPSILON:
+            cells = self.city.path_to(cell, stop.cell)
+            if cells is None:
                 return None
-        pickup_distances, pickup_seconds = dict(label.pickup_distances), dict(label.pickup_seconds)
-        occupied = set(label.occupied)
-        pid = stop.passenger_id
-        if stop.pickup:
-            commitment = context.commitments.get(pid)
-            if commitment:
-                # Approach protection starts at the ORIGINAL confirmation
-                # odometer, not at the start of this hypothetical replanning.
-                consumed = context.odometer_m - commitment.confirmation_odometer_m
-                if consumed + total > commitment.approach_limit_m + EPSILON:
+            distance = len(cells) * CELL_METERS
+            total += distance
+            seconds += distance / FREE_SPEED_MPS
+            if best is not None and total > best.distance_m + EPSILON:
+                return None
+            for pid in occupied:
+                # Preserve distance already ridden, including the locked prefix.
+                ridden[pid] = ridden.get(pid, 0) + distance
+                trip = trips[pid]
+                if ridden[pid] > trip.reference_m + trip.budget_m + EPSILON:
                     return None
-            pickup_distances[pid], pickup_seconds[pid] = total, seconds
-            occupied.add(pid)
-        else:
-            occupied.remove(pid)
-        return Label((stop.cell, heading), total, seconds + 2.0, frozenset(occupied),
-                     ridden, pickup_distances, pickup_seconds, label.legs + (Leg(stop, cells),))
-
-    @staticmethod
-    def _prune(labels):
-        """Only merge exactly equal resource states; keep the stable path tie.
-
-        A shorter taxi route can still increase one person's ride. Pruning on
-        total distance alone would silently discard feasible future solutions.
-        """
-        kept = {}
-        for label in labels:
-            key = (label.state, label.distance_m, label.seconds,
-                   tuple(sorted(label.ridden.items())), tuple(sorted(label.pickup_distances.items())),
-                   tuple(sorted(label.pickup_seconds.items())))
-            previous = kept.get(key)
-            if previous is None or tuple(l.cells for l in label.legs) < tuple(l.cells for l in previous.legs):
-                kept[key] = label
-        return list(kept.values())
+            pid = stop.passenger_id
+            if stop.pickup:
+                commitment = context.commitments.get(pid)
+                if commitment:
+                    # Approach protection starts at the original confirmation.
+                    consumed = context.odometer_m - commitment.confirmation_odometer_m
+                    if consumed + total > commitment.approach_limit_m + EPSILON:
+                        return None
+                pickup_distances[pid], pickup_seconds[pid] = total, seconds
+                occupied.add(pid)
+            else:
+                occupied.remove(pid)
+            legs.append(Leg(stop, cells))
+            seconds += OPERATION_TICKS * STEP_SECONDS
+            cell = stop.cell
+        pid = candidate.passenger_id
+        # A zero budget permits no positive detour, already checked above.
+        score = max((max(0.0, ridden.get(i, 0) - t.reference_m) / t.budget_m
+                     if t.budget_m else 0.0) for i, t in trips.items())
+        plan = Plan(tuple(legs), total, pickup_distances[pid],
+                    context.now_seconds + pickup_seconds[pid], ridden[pid], score)
+        if promised is not None and (
+                plan.candidate_approach_m > promised.candidate_approach_m + EPSILON
+                or plan.candidate_pickup_seconds > promised.candidate_pickup_seconds + EPSILON
+                or plan.candidate_ride_m > promised.candidate_ride_m + EPSILON
+                or plan.budget_score > promised.budget_score + EPSILON):
+            # Revalidation may choose another insertion within the same promises.
+            return None
+        return plan

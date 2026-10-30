@@ -1,5 +1,71 @@
 # Vérifications effectuées
 
+## Demi-tours autorisés et routage simplifié, 30 octobre 2026
+
+Commande exécutée dans l'environnement du dépôt :
+
+```powershell
+.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider
+```
+
+Résultat : **57 tests réussis en 14,83 s**. Le contrôle couvre les chemins
+entre cellules, l'arrêt sur place, les demi-tours après montée ou stationnement,
+la fin obligatoire d'une portion engagée, son reste d'approche et son coût pour
+les passagers déjà à bord. Les quatre bornes de revalidation sont exercées
+séparément. Capacité, budgets cumulés, protection des approches, opérations,
+messages, rendu, rejeu et exports restent testés.
+
+La congestion demeure séparée pour les deux sens : le test d'instantané vérifie
+un ralentissement pour trois taxis dans un sens et la vitesse libre pour le taxi
+en sens opposé. Un test complet vérifie aussi une congestion non nulle et
+l'indépendance de l'ordre d'activation. Aucun changement de `traffic.py`.
+
+Le diagnostic d'état figé reste défensif. Son test force l'absence d'offre pour
+vérifier l'arrêt incomplet ; l'ancien cas de taxi mal orienté est désormais
+couvert par une livraison réussie avec demi-tour.
+
+Comparaison réexécutée :
+
+```powershell
+.\.venv\Scripts\python.exe -B run_experiments.py --output output/comparison-uturns
+```
+
+Cinq graines fixées de 2026 à 2030, capacités 1 et 3, huit taxis et 60 demandes
+entre 0 et 300 s. **Les dix simulations sont complètes : 60/60 clients livrés
+chacune, cinq paires utilisables.** Les JSON exportés ont été comparés : seule
+la capacité diffère dans chaque paire. Les scénarios des cinq graines sont
+également identiques aux précédents exports sans demi-tour.
+
+| Mesure | Moyenne individuel | Moyenne partagé | Moyenne des écarts | Écart-type des écarts |
+| --- | ---: | ---: | ---: | ---: |
+| Distance totale (m) | 129 760 | 90 500 | -39 260 | 11 225,33 |
+| Attente moyenne (s) | 427,47 | 250,20 | -177,27 | 47,95 |
+| Temps total moyen (s) | 532,05 | 360,57 | -171,49 | 46,93 |
+| Fraction de distance partagée | 0 | 0,24005 | +0,24005 | 0,05726 |
+
+Les écarts sont partagé moins individuel. Ces résultats caractérisent ces
+entrées et cette politique, sans garantie pour une ville réelle. Les anciens
+exports `output/comparison/` sont préservés et correspondent à l'interdiction
+des demi-tours. Les tableaux plus anciens ci-dessous restent historiques.
+
+Avant migration, 930 couples ordonnés d'accès distincts de la carte par défaut
+ont été comparés : D0 orientée avec meilleure direction initiale et distance
+entre cellules étaient identiques. La nouvelle définition conserve ces valeurs.
+
+`city.py` et `planning.py` passent ensemble de 325 à 250 lignes physiques.
+`State`, `successors`, `paths_to`, `Label`, `_visit` et `_prune` sont retirés ou
+remplacés. Les comptes par passager et la recherche des insertions restent
+présents. Aucune mesure comparative de performance n'a été faite : les durées
+de tests ne permettent pas d'annoncer un facteur d'accélération.
+
+Le commit local `d488533` conserve l'état avant migration. Son push vers
+`origin/yanis` est bloqué par GitHub : erreur 403, droits d'écriture absents
+pour le compte `Yanicse`. Aucun succès de publication n'est annoncé.
+
+L'interface Tk n'a pas fait l'objet d'un nouveau contrôle visuel ; le rendu et
+ses exports ont été exercés par la suite automatique.
+
+
 ## Simplification et comparaison minimale, 30 octobre 2026
 
 Suite complète dans l'environnement du dépôt : **51 tests réussis en 16,43 s**.

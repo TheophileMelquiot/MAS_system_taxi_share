@@ -1,4 +1,4 @@
-"""Generation, input rejection and legal oriented reachability."""
+"""Generation, input rejection and bidirectional road connectivity."""
 
 from dataclasses import replace
 import json
@@ -69,24 +69,26 @@ def test_excessive_buildings_and_taxis_are_not_silently_reduced():
             generate(config)
 
 
-def test_no_uturns_corners_and_personal_reference(ring_scenario):
+def test_shortest_paths_allow_reversal_and_zero_length_visits(ring_scenario):
     city = ring_scenario().validate()
-    state = ((1, 0), (-1, 0))
-    assert ((2, 0), (1, 0)) not in city.successors(state)
-    assert city.successors(((0, 0), (-1, 0))) == (((0, 1), (0, 1)),)
+    assert city.path_to((1, 0), (5, 0)) == ((2, 0), (3, 0), (4, 0), (5, 0))
+    assert city.path_to((5, 0), (1, 0)) == ((4, 0), (3, 0), (2, 0), (1, 0))
+    assert city.path_to((1, 0), (1, 0)) == ()
+    assert city.path_to((0, 0), (0, 1)) == ((0, 1),)
     assert city.reference_distance((1, 0), (5, 0)) == 400
-    assert min(len(path) for path, _ in city.paths_to(state, (5, 0))) == 20
+    assert city.reference_distance((1, 0), (1, 0)) == 0
 
 
-def test_oriented_validation_rejects_dead_ends():
+def test_connectivity_accepts_dead_ends_and_rejects_disconnected_roads():
     city = City(4, 3, (0,), (), (Building(0, (1, 1), (1, 0)),))
-    with pytest.raises(ValueError, match="continuation"):
-        city.validate_oriented_accessibility()
-
-
-def test_accessibility_targets_positions_not_all_headings(ring_scenario):
-    # A ring has two oriented components; both reach every access position.
-    ring_scenario().validate()
+    city.validate_accessibility()
+    assert city.path_to((3, 0), (0, 0)) == ((2, 0), (1, 0), (0, 0))
+    disconnected = City(4, 3, (0, 2), ())
+    with pytest.raises(ValueError, match="Disconnected"):
+        disconnected.validate_accessibility()
+    assert disconnected.path_to((0, 0), (0, 2)) is None
+    with pytest.raises(ValueError, match="Unreachable"):
+        disconnected.reference_distance((0, 0), (0, 2))
 
 
 def test_boolean_coordinates_and_identifiers_are_invalid(ring_scenario):
