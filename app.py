@@ -6,26 +6,26 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from taxishare.config import Config
-from taxishare.scenario import generate, Scenario
+from taxishare.scenario import generate
 from taxishare.model import TaxiShareModel
 from taxishare.metrics import export_results, summary
 from taxishare.visualization import create_figure, draw_model
 
 LABELS = {
-    "width": "Largeur (cellules)", "height": "Hauteur (cellules)",
-    "horizontal_axes": "Axes horizontaux", "vertical_axes": "Axes verticaux",
-    "axis_spacing": "Espacement minimal", "buildings": "Bâtiments", "taxis": "Taxis",
-    "requests": "Demandes", "appearance_seconds": "Apparitions jusqu'à (s)",
-    "capacity": "Places par taxi", "congestion_threshold": "Seuil de fluidité K",
-    "detour_rate": "Taux de détour", "detour_cap_m": "Plafond de détour (m)",
-    "seed": "Graine", "max_seconds": "Plafond technique (s)",
+    "width": "Width (cells)", "height": "Height (cells)",
+    "horizontal_axes": "Horizontal axes", "vertical_axes": "Vertical axes",
+    "axis_spacing": "Minimum spacing", "buildings": "Buildings", "taxis": "Taxis",
+    "requests": "Requests", "appearance_seconds": "Arrivals until (s)",
+    "capacity": "Seats per taxi", "congestion_threshold": "Free-flow threshold K",
+    "detour_rate": "Detour rate", "detour_cap_m": "Detour limit (m)",
+    "seed": "Seed", "max_seconds": "Simulation time limit (s)",
 }
 
 
 class Application:
     def __init__(self, root):
         self.root = root
-        self.root.title("TaxiShare | Simulation multi-agents Mesa")
+        self.root.title("TaxiShare | Mesa multi-agent simulation")
         self.root.geometry("1400x900")
         self.playing = False
         self.model = TaxiShareModel(generate(Config()))
@@ -44,12 +44,12 @@ class Application:
         panel = ttk.Frame(self.root, padding=14)
         panel.pack(side="left", fill="y")
         ttk.Label(panel, text="TAXISHARE", font=("Segoe UI", 19, "bold")).pack(anchor="w")
-        ttk.Label(panel, text="Un monde · Agents autonomes\nHorloge commune : 0,2 s").pack(anchor="w", pady=(2, 12))
-        for label, callback in (("Démarrer / Pause", self.toggle), ("Avancer de 0,2 s", self.single_step),
-                                ("Rejouer ce scénario", self.replay), ("Charger un scénario", self.load),
-                                ("Exporter les résultats", self.export)):
+        ttk.Label(panel, text="One world · Autonomous agents\nShared clock: 0.2 s").pack(anchor="w", pady=(2, 12))
+        for label, callback in (("Start / Pause", self.toggle), ("Advance by 0.2 s", self.single_step),
+                                ("Replay scenario", self.replay),
+                                ("Export results", self.export)):
             ttk.Button(panel, text=label, command=callback).pack(fill="x", pady=2)
-        ttk.Label(panel, text="Pas par rafraîchissement").pack(anchor="w", pady=(12, 0))
+        ttk.Label(panel, text="Steps per refresh").pack(anchor="w", pady=(12, 0))
         ttk.Spinbox(panel, from_=1, to=500, textvariable=self.speed, width=12).pack(fill="x")
         ttk.Separator(panel).pack(fill="x", pady=12)
         form = ttk.Frame(panel)
@@ -59,7 +59,7 @@ class Application:
             variable = tk.StringVar(value=str(getattr(self.model.config, name)))
             self.inputs[name] = variable
             ttk.Entry(form, textvariable=variable, width=10).grid(row=row, column=1, padx=(8, 0))
-        ttk.Button(panel, text="Générer avec ces paramètres", command=self.new_scenario).pack(fill="x", pady=10)
+        ttk.Button(panel, text="Generate with these parameters", command=self.new_scenario).pack(fill="x", pady=10)
         ttk.Label(panel, textvariable=self.status, wraplength=260, justify="left").pack(anchor="w", pady=8)
 
     def toggle(self):
@@ -77,12 +77,15 @@ class Application:
             self.model.step()
         except Exception as exc:
             self.playing = False
-            messagebox.showerror("Simulation interrompue", f"{type(exc).__name__}: {exc}")
+            messagebox.showerror("Simulation interrupted", f"{type(exc).__name__}: {exc}")
             raise
 
     def pump(self):
         """Bound GUI work per callback; never sleep to represent simulated time."""
         if self.playing and self.model.running:
+            # Check the wall-clock budget BETWEEN complete simulation ticks.
+            # A costly planning tick can exceed it; interrupting half a tick
+            # would leave negotiations and physical updates inconsistent.
             deadline = time.perf_counter() + 0.035
             try:
                 steps = max(1, min(500, self.speed.get()))
@@ -99,15 +102,17 @@ class Application:
         draw_model(self.figure, self.model)
         self.canvas.draw_idle()
         values = summary(self.model)
-        state = "En cours" if self.playing and self.model.running else "En pause"
+        state = "Running" if self.playing and self.model.running else "Paused"
         if not self.model.running:
-            state = "Terminé" if self.model.status == "complete" else "Incomplet"
+            state = "Complete" if self.model.status == "complete" else "Incomplete"
         self.status.set(f"{state} | {self.model.time_seconds:.1f} s\n"
-                        f"Livrés : {values['delivered_count']} / {values['planned_count']}\n"
-                        f"Distance : {values['distance_total_m'] / 1000:.2f} km\n"
-                        f"Cause d'arrêt : {self.model.stop_reason or '-'}")
+                        f"Delivered: {values['delivered_count']} / {values['planned_count']}\n"
+                        f"Distance: {values['distance_total_m'] / 1000:.2f} km\n"
+                        f"Stop reason: {self.model.stop_reason or '-'}")
 
     def set_scenario(self, scenario):
+        # Rebuild every agent and counter from saved exogenous inputs. Replaying
+        # must not reuse current commitments or draw a different random city.
         self.playing = False
         self.model = TaxiShareModel(scenario)
         scenario.save(Path(__file__).parent / "output/gui/scenario.json")
@@ -121,28 +126,20 @@ class Application:
                       for name, field in Config.__dataclass_fields__.items()}
             self.set_scenario(generate(Config(**values)))
         except (ValueError, TypeError) as exc:
-            messagebox.showerror("Configuration invalide", str(exc))
+            messagebox.showerror("Invalid configuration", str(exc))
 
     def replay(self):
         self.set_scenario(self.model.scenario)
 
-    def load(self):
-        path = filedialog.askopenfilename(filetypes=[("Scénario JSON", "*.json")])
-        if path:
-            try:
-                self.set_scenario(Scenario.load(path))
-            except (ValueError, OSError) as exc:
-                messagebox.showerror("Scénario invalide", str(exc))
-
     def export(self):
         self.playing = False
-        directory = filedialog.askdirectory(title="Dossier des exports")
+        directory = filedialog.askdirectory(title="Export directory")
         if directory:
             try:
                 export_results(self.model, directory)
-                messagebox.showinfo("Export terminé", directory)
+                messagebox.showinfo("Export complete", directory)
             except OSError as exc:
-                messagebox.showerror("Export impossible", str(exc))
+                messagebox.showerror("Export failed", str(exc))
         self.refresh()
 
 

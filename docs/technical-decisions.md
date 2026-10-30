@@ -127,9 +127,14 @@ qui retire les espacements imposés, puis les réintroduit. Les bâtiments sont
 tirés sans remise. Les destinations sont préparées par origine pour exclure
 les accès identiques sans boucle de rejet. Les horaires sont des entiers inclusifs.
 
-Le JSON est versionné (`schema_version = 1`). Les anciens formats sont refusés
-avec un diagnostic, faute d'ancien scénario fourni à migrer. Le scénario complet,
-et non la graine seule, est la référence de rejeu.
+Le JSON exporté est versionné (`schema_version = 1`) et conserve toutes les
+entrées pour la traçabilité. À la demande de l'utilisateur, le chargement de
+scénarios depuis un fichier est retiré de l'interface, de la ligne de commande
+et de `Scenario`. Le rejeu reconstruit le modèle depuis le scénario courant
+en mémoire. Une génération identique nécessite les mêmes paramètres, la même
+graine et la même version du générateur ; une graine seule ne suffit pas après
+une modification du code. `--config` conserve la lecture des paramètres de
+génération uniquement, sans importer une carte ni des voyages sauvegardés.
 
 ## Calcul numérique, congestion et plafond
 

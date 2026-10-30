@@ -1,5 +1,25 @@
 # Vérifications effectuées
 
+## Vérification de la branche yanis, 30 octobre 2026
+
+Environnement isolé `.venv` : Windows, Python 3.12.2, Mesa 3.3.1,
+Matplotlib 3.10.8 et pytest 8.4.2, installés à partir de `requirements-dev.txt`.
+
+Commande exécutée : `.\.venv\Scripts\python.exe -m pytest -q`.
+Résultat après retrait du chargement : **44 tests réussis en 9,87 s**,
+dont l'exécution complète du scénario par défaut avec les assertions actives.
+Les 12 cas propres au chargement JSON sont retirés avec la fonctionnalité.
+Le test de sauvegarde vérifie maintenant la conservation de toutes les entrées
+exportées et la génération identique avec les mêmes paramètres.
+
+Le bouton « Load scenario », l'option `--scenario` et `Scenario.load` sont
+supprimés à la demande de l'utilisateur. L'export et le rejeu du scénario courant
+en mémoire sont conservés, ainsi que les commentaires explicatifs et la politique
+de revalidation des offres. L'interface graphique n'a pas fait l'objet d'un
+nouveau contrôle visuel pendant cette vérification.
+
+Les résultats détaillés ci-dessous conservent leur date de validation initiale.
+
 Date : 29 octobre 2026. Environnement testé : Windows, Python 3.12, Mesa 3.3.1,
 Matplotlib 3.10.8. Les dépendances installées sont consignées dans
 `requirements-lock.txt`.
@@ -69,8 +89,9 @@ paramètres et les graphiques ont été inspectés. Le pas manuel a fait passer
 l'horloge de 0,0 à 0,2 s. Le démarrage a fait progresser la simulation et
 la pause l'a arrêtée sans modifier les entrées.
 
-Les exports et le chargement JSON sont aussi testés par les fonctions utilisées
-par l'interface. Ces tests ne constituent pas un parcours automatisé exhaustif
+Les exports sont aussi testés par les fonctions utilisées par l'interface.
+Le chargement JSON, vérifié dans la version initiale, a depuis été retiré.
+Ces tests ne constituent pas un parcours automatisé exhaustif
 de toutes les boîtes de dialogue Windows.
 
 ## Portée des vérifications

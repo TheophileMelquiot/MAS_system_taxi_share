@@ -13,7 +13,8 @@ Depuis ce dossier dans PowerShell, l'environnement est déjà installé :
 .\.venv\Scripts\python.exe app.py
 ```
 
-Sur un autre ordinateur, avec Python 3.12 recommandé :
+Python 3.11 minimum est nécessaire pour Mesa 3.3.1 ; Python 3.12 est recommandé.
+Sur un autre ordinateur :
 
 ```powershell
 python -m venv .venv
@@ -21,10 +22,10 @@ python -m venv .venv
 .\.venv\Scripts\python.exe app.py
 ```
 
-L'interface permet de démarrer, mettre en pause, avancer de 0,2 s, rejouer,
-charger un scénario, modifier les paramètres de génération et exporter.
+L'interface est en anglais. Elle permet de démarrer, mettre en pause, avancer de 0,2 s, rejouer,
+modifier les paramètres de génération et exporter.
 Modifier un champ ne change pas le monde courant : cliquer sur
-« Générer avec ces paramètres » applique ces valeurs à un nouveau scénario.
+« Generate with these parameters » applique ces valeurs à un nouveau scénario.
 Une même graine et les mêmes paramètres reproduisent la même génération.
 Le nombre de pas par rafraîchissement change la cadence de l'animation,
 sans modifier la durée du pas ni les décisions.
@@ -35,7 +36,7 @@ relie la ligne à l'accès réel. Les taxis sont gris lorsqu'ils sont vides et l
 orange lorsqu'ils sont vides avec une réservation, et verts lorsqu'ils ont des
 passagers (même s'ils ont aussi des réservations futures). Les taxis sont des
 triangles orientés dans leur sens de circulation, y compris pendant les arrêts.
-Deux légendes distinctes, « Taxis » et « Clients », apparaissent sous la carte.
+Deux légendes distinctes, « Taxis » et « Passengers », apparaissent sous la carte.
 Les décalages graphiques ne déplacent pas les agents.
 
 Le scénario courant de l'interface est sauvegardé avant exécution dans
@@ -47,7 +48,6 @@ copie complète du scénario. Rejouer remet ce scénario à son état initial.
 ```powershell
 .\.venv\Scripts\python.exe run_simulation.py --output output/default
 .\.venv\Scripts\python.exe run_simulation.py --seed 17 --capacity 4 --output output/seed17
-.\.venv\Scripts\python.exe run_simulation.py --scenario output/default/scenario.json --output output/replay
 ```
 
 Tous les paramètres de `Config` sont disponibles en ligne de commande,
@@ -57,15 +57,17 @@ avec des tirets à la place des underscores. `--help` les liste.
 `--no-figure` désactive seulement la génération de l'image finale.
 
 Une exécution normale renvoie le code 0. Un arrêt incomplet renvoie le code 2
-et conserve les résultats partiels. Le chargement d'un scénario ne peut pas
-être mélangé avec des options de génération : ses entrées sauvegardées font foi.
+et conserve les résultats partiels. Le chargement de scénarios sauvegardés a été
+retiré. Pour reproduire une génération, conserver les mêmes paramètres et la même
+graine avec la même version du code. Le bouton « Replay scenario » réinitialise
+le scénario courant conservé en mémoire.
 
 ## Organisation et parcours de lecture
 
 | Fichier | Responsabilité |
 | --- | --- |
 | `taxishare/config.py` | Paramètres, unités, constantes physiques et validations |
-| `taxishare/scenario.py` | Quatre flux aléatoires, génération et JSON rejouable |
+| `taxishare/scenario.py` | Quatre flux aléatoires, génération et export JSON |
 | `taxishare/city.py` | Routes, accès et graphe orienté sans demi-tour |
 | `taxishare/contracts.py` | Données explicites : voyages, offres, arrêts, engagements, actions |
 | `taxishare/messaging.py` | Boîtes de réception individuelles et transport des messages |
@@ -83,6 +85,23 @@ Pour comprendre les comportements, lire d'abord `passenger.py` et `taxi.py`,
 puis `model.py` pour leur ordre d'activation et `planning.py` pour les contraintes.
 Le modèle coordonne les phases ; il ne choisit pas un taxi à la place d'un client.
 Les identifiants, commentaires et docstrings sont en anglais conformément au cahier.
+
+Pour suivre la logique du projet à la lecture du code :
+
+1. `scenario.py` prépare la carte, les taxis et les demandes. Le scénario est
+   exporté pour conserver les entrées utilisées dans les expériences.
+2. `model.py` révèle les demandes à leur date prévue et ordonne les phases,
+   sans choisir les taxis à la place des clients.
+3. `passenger.py` envoie un CFP unique, compare les offres et attend une
+   confirmation. `taxi.py` conserve les demandes et ses engagements propres.
+4. `planning.py` essaie les insertions de montée et de descente. Il vérifie
+   capacité, orientations, budgets cumulatifs et approches déjà promises.
+5. `taxi.py` fait progresser chaque action pendant 0,2 s avec les vitesses
+   communes calculées dans `traffic.py`. `metrics.py` observe et exporte.
+
+Une acceptation peut être refusée si une confirmation précédente a rendu
+l'offre moins favorable. La demande reste active et reçoit de nouvelles offres
+au pas suivant. Il n'y a pas de seconde négociation dans le même pas.
 
 ## Règles essentielles implémentées
 

@@ -38,6 +38,8 @@ class TaxiShareModel(Model):
         buildings = {b.building_id: b for b in scenario.buildings}
         self.passengers = []
         self._appearances = defaultdict(list)
+        # The scenario knows future trips for replay, but taxis learn them only
+        # through announce() at their appearance tick. D0 is fixed once here.
         for request in sorted(scenario.requests, key=lambda r: r.passenger_id):
             origin = buildings[request.origin_id].access
             destination = buildings[request.destination_id].access
@@ -74,6 +76,8 @@ class TaxiShareModel(Model):
         """Execute the nine specified phases without wall-clock sleeps."""
         if not self.running:
             return
+        # Finish events due at t before negotiation: a completed descent can
+        # free a seat now. Actions then progress independently over [t, t+0.2].
         self._finalize_boundary()                         # 1. Complete due actions.
         self._release_requests()                          # 2. Reveal due calls.
         if self._check_completion_or_limit():
@@ -102,6 +106,12 @@ class TaxiShareModel(Model):
             passenger.announce()
 
     def _negotiate(self):
+        """One addressed-message round at a single simulated instant.
+
+        Agents do the choosing and revalidation. These common phases ensure
+        all offers are issued before any client chooses, and CLOSE reaches
+        every taxi before the next round. Rejections wait until the next tick.
+        """
         self._activate(Taxi, "receive_requests")
         self._activate(Taxi, "make_offers")
         self._round_offer_count = sum(len(t.offers) for t in self.taxis)
@@ -118,6 +128,9 @@ class TaxiShareModel(Model):
         return not self.running
 
     def _check_frozen_state(self):
+        # A temporary lack of work is not a failure while future calls or taxi
+        # actions can still change feasibility. Only a fully parked fleet with
+        # no future calls and no admissible offer is considered frozen.
         future = bool(self._appearances)
         parked = all(t.action is None and not t.commitments and not t.legs for t in self.taxis)
         waiting = any(p.state == PassengerState.WAITING for p in self.passengers)

@@ -67,6 +67,8 @@ class City:
         if start not in self._trees:
             if start[0] not in self.roads or start[1] not in self.headings(start[0]):
                 raise ValueError(f"Invalid oriented road state: {start}")
+            # Each edge is 100 m, so breadth-first search minimizes distance.
+            # One tree serves every destination queried from this oriented start.
             parents = {start: None}
             queue = deque([start])
             while queue:
@@ -78,6 +80,8 @@ class City:
             self._trees[start] = parents
         parents = self._trees[start]
         choices = []
+        # Keep one path per arrival heading: the shortest arrival at this stop
+        # may face the wrong way for the passenger's next leg.
         for heading in self.headings(target):
             end = (target, heading)
             if end not in parents:
@@ -114,6 +118,8 @@ class City:
             for nxt in following:
                 reverse[nxt].append(state)
         for access in sorted({b.access for b in self.buildings}):
+            # Search backwards from all legal arrivals at this access. Seeing
+            # every road state proves every taxi orientation can reach it.
             seen = {(access, h) for h in self.headings(access)}
             queue = deque(sorted(seen))
             while queue:

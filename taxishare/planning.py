@@ -13,6 +13,12 @@ from .contracts import Commitment, Leg, Plan, Stop, Trip
 
 @dataclass(frozen=True)
 class PlanningContext:
+    """Taxi snapshot used for hypothetical plans, never the live taxi state.
+
+    The anchor is the position/heading after the action already in progress.
+    Its remaining distance and duration are carried by prefix_distance_m and
+    locked_seconds. Existing commitments retain their original promises.
+    """
     anchor: State
     now_seconds: float
     prefix_distance_m: float
@@ -27,6 +33,11 @@ class PlanningContext:
 
 @dataclass
 class Label:
+    """One possible partial route and its per-passenger resource accounting.
+
+    Different arrival headings can make different later stops feasible. Keep
+    those alternatives until all stops and passenger constraints are checked.
+    """
     state: State
     distance_m: float
     seconds: float
@@ -60,12 +71,16 @@ class InsertionPlanner:
         best = None
         pickup = Stop(candidate.passenger_id, True, candidate.origin)
         drop = Stop(candidate.passenger_id, False, candidate.destination)
+        # Try only the new pickup/drop positions. Existing stops never change
+        # their relative order, which bounds the search and preserves commitments.
         for first in range(len(context.stops) + 1):
             with_pickup = context.stops[:first] + (pickup,) + context.stops[first:]
             for last in range(first + 1, len(with_pickup) + 1):
                 stops = with_pickup[:last] + (drop,) + with_pickup[last:]
                 if not self._valid_stop_order(stops, context.occupied, context.capacity):
                     continue
+                # Capacity is checked before routing because an impossible stop
+                # order stays impossible regardless of the paths between stops.
                 for plan in self._route(context, candidate, trips, stops, best, promised):
                     if best is None or plan_key(plan) < plan_key(best):
                         best = plan
@@ -91,6 +106,8 @@ class InsertionPlanner:
 
     def _route(self, context, candidate, trips, stops, best, promised):
         ridden = dict(context.ridden)
+        # Replanning cannot erase the rest of a road portion already entered.
+        # Everyone currently aboard travels this prefix before any new stop.
         for pid in context.occupied:
             ridden[pid] = ridden.get(pid, 0) + context.prefix_distance_m
         if any(ridden.get(pid, 0) > t.reference_m + t.budget_m + EPSILON for pid, t in trips.items()):
@@ -112,6 +129,8 @@ class InsertionPlanner:
                 return
         pid = candidate.passenger_id
         for label in labels:
+            # The score concerns the most affected passenger, including the new
+            # candidate. A zero budget is feasible only with zero positive detour.
             score = max((max(0.0, label.ridden.get(i, 0) - t.reference_m) / t.budget_m
                          if t.budget_m else 0.0) for i, t in trips.items())
             plan = Plan(label.legs, label.distance_m, label.pickup_distances[pid],
@@ -121,6 +140,8 @@ class InsertionPlanner:
                     or plan.candidate_pickup_seconds > promised.candidate_pickup_seconds + EPSILON
                     or plan.candidate_ride_m > promised.candidate_ride_m + EPSILON
                     or plan.budget_score > promised.budget_score + EPSILON):
+                # A concurrent confirmation changed the plan too much. Reject
+                # this acceptance; the next tick offers the updated conditions.
                 continue
             yield plan
 
@@ -131,6 +152,8 @@ class InsertionPlanner:
         seconds = label.seconds + distance / FREE_SPEED_MPS
         ridden = dict(label.ridden)
         for pid in label.occupied:
+            # Charge this leg to each person aboard, not just to the taxi.
+            # Adding an insertion never resets distance already travelled.
             ridden[pid] = ridden.get(pid, 0) + distance
             trip = trips[pid]
             if ridden[pid] > trip.reference_m + trip.budget_m + EPSILON:
@@ -141,6 +164,8 @@ class InsertionPlanner:
         if stop.pickup:
             commitment = context.commitments.get(pid)
             if commitment:
+                # Approach protection starts at the ORIGINAL confirmation
+                # odometer, not at the start of this hypothetical replanning.
                 consumed = context.odometer_m - commitment.confirmation_odometer_m
                 if consumed + total > commitment.approach_limit_m + EPSILON:
                     return None

@@ -9,6 +9,8 @@ import math
 
 STEP_SECONDS = 0.2
 CELL_METERS = 100.0
+# 50 km/h = 125/9 m/s: a free road portion takes exactly 36 ticks (7.2 s).
+# Boarding and alighting each occupy ten whole ticks (2 s).
 FREE_SPEED_MPS = 125 / 9
 OPERATION_TICKS = 10
 EPSILON = 1e-7  # Numerical tolerance, never an extra detour allowance.
@@ -72,6 +74,11 @@ class Config:
         return round(self.max_seconds / STEP_SECONDS)
 
     def budget(self, reference_m: float) -> float:
+        """Limit extra distance both proportionally to D0 and in absolute metres.
+
+        This allowance applies cumulatively over the whole passenger journey;
+        it is not renewed after each insertion or road portion.
+        """
         return min(self.detour_rate * reference_m, self.detour_cap_m)
 
     def to_dict(self):

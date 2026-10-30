@@ -39,6 +39,8 @@ class Passenger(Agent):
                   and m.sender == ("taxi", m.payload.taxi_id)]
         if not offers:
             return
+        # Arrival time is the primary preference. Detour fairness only breaks
+        # time ties; taxi ID makes an exact tie reproducible without randomness.
         offer = min(offers, key=lambda o: (round(o.plan.candidate_pickup_seconds, 7),
                                            round(o.plan.budget_score, 7), o.taxi_id))
         self.selected_offer = offer
@@ -53,6 +55,8 @@ class Passenger(Agent):
             if identity != self.selected_offer.identity or identity[2] != self.model.tick:
                 continue
             if message.kind == Kind.REJECT:
+                # Keep the original call and its age. Taxis remember it and
+                # issue fresh offers next tick, so no new CFP is needed.
                 self.last_rejection = detail
                 self.selected_offer = None
                 continue
@@ -60,6 +64,8 @@ class Passenger(Agent):
             self.taxi_id = identity[1]
             self.state = PassengerState.RESERVED
             self.dates["confirmation"] = self.model.time_seconds
+            # CLOSE removes this call from all taxi inbox-side demand caches,
+            # including taxis whose offer the passenger did not select.
             for address in self.model.taxi_addresses:
                 self._send(address, Kind.CLOSE, self.passenger_id)
             self.selected_offer = None
@@ -73,6 +79,8 @@ class Passenger(Agent):
             Kind.DROP_END: (PassengerState.ALIGHTING, PassengerState.DELIVERED, "drop_end"),
         }
         for message in self.model.bus.receive(self.address, set(transitions)):
+            # The passenger reacts to its taxi's messages instead of inspecting
+            # the taxi's action or changing transport state on its own.
             assert message.sender == ("taxi", self.taxi_id), "Unexpected transport sender"
             before, after, date = transitions[message.kind]
             assert self.state == before, f"Illegal passenger transition: {self.state} -> {after}"

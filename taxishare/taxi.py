@@ -20,6 +20,8 @@ class Taxi(Agent):
         self.heading = initial.heading
         self.known_requests = {}
         self.offers = {}
+        # Commitments are future obligations; occupied contains physical seats
+        # in use. Sequential reservations may therefore outnumber the capacity.
         self.commitments = {}
         self.occupied = set()
         self.ridden = {}
@@ -53,6 +55,8 @@ class Taxi(Agent):
     def make_offers(self):
         """Reevaluate known active trips once per tick without sending new CFPs."""
         self.offers.clear()
+        # Every offer in this phase uses the same taxi snapshot. No place is
+        # reserved until an acceptance is revalidated against live commitments.
         context = self.planning_context()
         for pid, trip in sorted(self.known_requests.items()):
             if pid in self.commitments:
@@ -81,6 +85,8 @@ class Taxi(Agent):
                 valid.append(offer)
         valid.sort(key=lambda offer: (self.known_requests[offer.passenger_id].appearance_tick,
                                       offer.passenger_id))
+        # Commit immediately after each successful revalidation so the next
+        # acceptance cannot claim capacity or distance budgets already consumed.
         for offer in valid:
             self._revalidate_and_commit(offer)
 
@@ -117,6 +123,8 @@ class Taxi(Agent):
         elif isinstance(self.action, Operation):
             seconds = self.action.remaining_ticks * STEP_SECONDS
             if not self.action.stop.pickup:
+                # This is the projected state AFTER the locked descent ends.
+                # The real seat remains occupied until _finish_operation runs.
                 occupied.remove(self.action.stop.passenger_id)
         return PlanningContext(anchor, self.model.time_seconds, prefix, seconds,
                                self.odometer_m, frozenset(occupied), dict(self.ridden),
@@ -138,6 +146,8 @@ class Taxi(Agent):
         if stop.pickup:
             self._send(pid, Kind.BOARD_END, None)
         else:
+            # Notify with the final distance before removing local accounting.
+            # The passenger will retain that value after the trip is complete.
             self._send(pid, Kind.DROP_END, self.ridden[pid])
             self.occupied.remove(pid)  # The seat is released only now.
             del self.ridden[pid]
@@ -200,6 +210,8 @@ class Taxi(Agent):
         for pid in self.occupied:
             self.ridden[pid] += distance
         self.moving_seconds += STEP_SECONDS
+        # The whole tick belongs to circulation, but only distance/speed is
+        # physical travel. Any unused tick fraction is quantization, not traffic.
         self.congestion_seconds += max(0.0, active_seconds - distance / FREE_SPEED_MPS)
         self.quantization_seconds += max(0.0, STEP_SECONDS - active_seconds)
 

@@ -22,7 +22,7 @@ comme des contraintes actuelles.
 | 9. Voyages | `generate` : origine uniforme, destination conditionnelle, accès distincts | Rejet d'accès identiques et validation de chaque scénario |
 | 10. Apparitions | Calendrier entier de 0 à la borne inclusive ; publication à échéance | Demande future empêchant l'arrêt et invisible aux taxis avant échéance |
 | 11. Flotte initiale | Positions distinctes hors carrefours, orientations d'arrivée légales | Génération, nombre excessif refusé, placement invalide refusé |
-| 12. Reproductibilité | Quatre flux SHA-256, scénario JSON complet | Isolation des flux, sauvegarde/chargement, rejeu |
+| 12. Reproductibilité | Quatre flux SHA-256, scénario JSON complet exporté ; chargement retiré à la demande utilisateur | Isolation des flux, export et génération identique, rejeu en mémoire |
 | 13. Capacité | Occupation prévisionnelle et réelle, réservations distinctes des places | Trois engagements avec capacité deux, réutilisation capacité un, capacité quatre |
 | 14. D0 personnel | `reference_distance` sur la meilleure orientation, sauvegardé dans `Trip` | Même origine/destination avec trajet réel défavorisé par l'orientation |
 | 15. Budget à bord | `PlanningContext.ridden`, budgets cumulés, contrôle par client | Budget déjà consommé non réinitialisé, budget nul compatible avec partage exact |
@@ -43,7 +43,7 @@ comme des contraintes actuelles.
 | 30. Responsabilités | Deux types d'agents ; géométrie, bus, observation et circulation séparés | Messages explicites, rendu sans effet sur les décisions |
 | 31. Qualité du code | Fonctions ciblées, docstrings et commentaires anglais, paramètres centralisés | Tests, compilation et assertions exécutés |
 | 32. Interface | `app.py` et `visualization.py`, un monde local | Contrôle visuel, pas manuel, démarrage, pause, rejeu |
-| 33. Exports | JSON, CSV, PNG, empreintes source et environnement | Exports partiels et complets, round-trip du scénario |
+| 33. Exports | JSON, CSV, PNG, empreintes source et environnement | Exports partiels et complets, conservation des entrées du scénario |
 | 34. Vérifications | Suite pytest et assertions métier | Voir `validation.md` pour les résultats exécutés |
 | 35. Comparaisons reportées | Pas de double monde ni d'infrastructure comparative imposée | Périmètre documenté ; graines variées utilisées seulement pour vérification |
 | 36. Exigences professeur | Bibliothèque Mesa, CFP/réponses, MultiGrid, visualisation et exports | Exécution complète du programme ; rapport académique distinct |

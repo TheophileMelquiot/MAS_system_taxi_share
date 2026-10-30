@@ -55,6 +55,8 @@ class MessageBus:
         selected, remaining = [], deque()
         while inbox:
             message = inbox.popleft()
+            # Receiving offers must not accidentally consume a confirmation or
+            # transport event intended for a later phase of the same tick.
             (selected if message.kind in kinds else remaining).append(message)
         self._inboxes[address] = remaining
         return selected

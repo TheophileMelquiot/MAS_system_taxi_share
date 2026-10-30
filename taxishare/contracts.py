@@ -27,6 +27,7 @@ class Trip:
 
 @dataclass(frozen=True)
 class Commitment:
+    """Confirmed trip with a fixed spatial promise until its pickup."""
     trip: Trip
     confirmation_odometer_m: float
     approach_limit_m: float
@@ -47,6 +48,11 @@ class Leg:
 
 @dataclass(frozen=True)
 class Plan:
+    """Hypothetical route plus the measurements used to compare its offer.
+
+    Pickup time excludes the candidate's own boarding operation. budget_score
+    is the largest share of detour budget used among all affected passengers.
+    """
     legs: tuple[Leg, ...]
     distance_m: float
     candidate_approach_m: float

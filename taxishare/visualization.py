@@ -50,7 +50,7 @@ def _draw_city(ax, model):
     _draw_waiting_passengers(ax, model)
     _draw_taxis(ax, model)
     ax.set(xlim=(-1, city.width), ylim=(-1, city.height), aspect="equal",
-           xlabel="Cellules (100 m)", ylabel="Cellules (100 m)", title="Ville, accès et orientations")
+           xlabel="Cells (100 m)", ylabel="Cells (100 m)", title="City, access points and headings")
 
 
 def _draw_waiting_passengers(ax, model):
@@ -97,6 +97,8 @@ def _draw_taxis(ax, model):
         x, y = taxi.pos
         heading = taxi.heading
         if isinstance(taxi.action, Move):
+            # MultiGrid keeps the origin until arrival; interpolation is only
+            # visual and must not introduce extra positions into the simulation.
             ratio = taxi.action.progressed_m / 100
             heading = taxi.action.heading
             x += ratio * heading[0]
@@ -113,27 +115,27 @@ def _draw_legends(ax):
     """Reserve a bottom row for two independent, clearly titled legends."""
     ax.set_axis_off()
     taxi_handles = [Line2D([], [], marker=">", markersize=8, linestyle="", color=COLORS[state], label=label)
-               for state, label in (("idle", "Taxi vide et libre"),
-                                    ("reserved", "Taxi vide réservé"),
-                                    ("occupied", "Taxi avec passagers"))]
+               for state, label in (("idle", "Empty, available taxi"),
+                                    ("reserved", "Empty, reserved taxi"),
+                                    ("occupied", "Taxi with passengers"))]
     passenger_handles = [Line2D([], [], marker="o", linestyle="", color=color, label=label)
-                   for color, label in ((PASSENGER_COLORS[PassengerState.WAITING], "Client en recherche"),
-                                        (PASSENGER_COLORS[PassengerState.RESERVED], "Client réservé"))]
+                   for color, label in ((PASSENGER_COLORS[PassengerState.WAITING], "Waiting passenger"),
+                                        (PASSENGER_COLORS[PassengerState.RESERVED], "Reserved passenger"))]
     taxi_legend = ax.legend(handles=taxi_handles, title="Taxis", loc="upper left",
                            bbox_to_anchor=(0.04, 1), fontsize=8, title_fontsize=9)
     ax.add_artist(taxi_legend)
-    ax.legend(handles=passenger_handles, title="Clients", loc="upper right",
+    ax.legend(handles=passenger_handles, title="Passengers", loc="upper right",
               bbox_to_anchor=(0.96, 1), fontsize=8, title_fontsize=9)
 
 
 def _draw_service(ax, model):
     values = model.data.model_vars
     times = values["time_seconds"]
-    for key, label, color in (("delivered", "Livrés", "#168b91"),
-                               ("waiting", "En recherche", "#db4668"),
-                               ("reserved", "Réservés", PASSENGER_COLORS[PassengerState.RESERVED])):
+    for key, label, color in (("delivered", "Delivered", "#168b91"),
+                               ("waiting", "Waiting", "#db4668"),
+                               ("reserved", "Reserved", PASSENGER_COLORS[PassengerState.RESERVED])):
         ax.plot(times, values[key], label=label, color=color, linewidth=1.7)
-    ax.set(title="Service des demandes", xlabel="Temps simulé (s)", ylabel="Passagers",
+    ax.set(title="Request service", xlabel="Simulated time (s)", ylabel="Passengers",
            xlim=(0, max(1, model.time_seconds)), ylim=(0, max(1, len(model.passengers))))
     ax.grid(alpha=0.15)
     ax.legend(fontsize=8)
@@ -144,6 +146,6 @@ def _draw_distances(ax, model):
     distances = [sum(t.distances[i] for t in model.taxis) / 1000 for i in categories]
     ax.bar([str(i) for i in categories], distances,
            color=["#e9a33b", "#78869b", "#168b91", "#4275a7", "#7355b7"][:len(distances)])
-    ax.set(title="Distance par occupation réelle", xlabel="Passagers dans le taxi", ylabel="Kilomètres de taxi")
+    ax.set(title="Distance by occupancy", xlabel="Passengers on board", ylabel="Taxi kilometres")
     ax.set_ylim(0, max(1, max(distances, default=0) * 1.1))
     ax.grid(axis="y", alpha=0.15)

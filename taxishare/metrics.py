@@ -22,6 +22,8 @@ def passenger_rows(model):
     for p in model.passengers:
         dates = p.dates
         taxi = assigned.get(p.passenger_id)
+        # Ongoing distance lives in the taxi. After delivery the commitment is
+        # removed and the passenger retains its final distance from DROP_END.
         distance = taxi.ridden[p.passenger_id] if taxi else p.distance_m
         completed = p.state == PassengerState.DELIVERED
         request = requests[p.passenger_id]
@@ -65,9 +67,13 @@ def taxi_rows(model):
 
 def summary(model):
     clients, taxis = passenger_rows(model), taxi_rows(model)
+    # Never treat an unfinished trip's missing duration as zero: averages use
+    # delivered passengers only, while the remaining population stays explicit.
     delivered = [row for row in clients if row["state"] == "delivered"]
     distance = sum(t["distance_total_m"] for t in taxis)
     shared = sum(t["distance_shared_m"] for t in taxis)
+    # This is vehicle distance with at least two people, counted once per metre.
+    # It is neither passenger-kilometres nor a direct measurement of emissions.
     means = {}
     for field in ("waiting_seconds", "onboard_seconds", "total_seconds", "detour_m"):
         means[f"mean_{field}"] = sum(p[field] for p in delivered) / len(delivered) if delivered else None

@@ -33,6 +33,8 @@ class Request:
 
 def random_stream(seed: int, name: str) -> random.Random:
     """Namespaced SHA-256 avoids Python's process-dependent built-in hash."""
+    # Changing arrival times must not redraw the city, fleet or destinations.
+    # Each named stream advances independently from the same master seed.
     digest = sha256(f"taxishare-v1:{seed}:{name}".encode()).digest()
     return random.Random(int.from_bytes(digest, "big"))
 
@@ -59,7 +61,7 @@ class Scenario:
                     self.horizontal, self.vertical, self.buildings)
 
     def validate(self) -> City:
-        """Validate loaded inputs as strictly as generated inputs."""
+        """Validate generated inputs and scenarios constructed directly in tests."""
         c = self.config
         for axes, size, count in ((self.horizontal, c.height, c.horizontal_axes),
                                   (self.vertical, c.width, c.vertical_axes)):
@@ -101,6 +103,8 @@ class Scenario:
                     or type(r.appearance_tick) is not int
                     or not 0 <= r.appearance_tick <= c.appearance_ticks):
                 raise ValueError(f"Invalid request: {r}")
+        # Geometric connectivity alone is insufficient: a taxi must still reach
+        # every access without reversing its incoming direction after a stop.
         city.validate_oriented_accessibility()
         return city
 
@@ -116,26 +120,6 @@ class Scenario:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         Path(path).write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
 
-    @classmethod
-    def load(cls, path):
-        """Reject legacy schemas explicitly; never reinterpret old business rules."""
-        raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        if raw.get("schema_version") != SCENARIO_VERSION:
-            raise ValueError("Unsupported scenario version; regenerate or explicitly migrate it")
-        try:
-            scenario = cls(
-                Config(**raw["config"]), tuple(raw["horizontal"]), tuple(raw["vertical"]),
-                tuple(Building(b["building_id"], tuple(b["cell"]), tuple(b["access"]))
-                      for b in raw["buildings"]),
-                tuple(TaxiInitial(t["taxi_id"], tuple(t["cell"]), tuple(t["heading"]))
-                      for t in raw["fleet"]),
-                tuple(Request(**r) for r in raw["requests"]))
-            scenario.validate()
-            return scenario
-        except (KeyError, TypeError, IndexError) as exc:
-            raise ValueError(f"Malformed scenario: {exc}") from exc
-
-
 def generate(config: Config) -> Scenario:
     """Four streams isolate map, fleet, trips and arrival times."""
     map_rng, fleet_rng, trip_rng, time_rng = (
@@ -143,6 +127,8 @@ def generate(config: Config) -> Scenario:
     horizontal = draw_axes(config.height, config.horizontal_axes, config.axis_spacing, map_rng)
     vertical = draw_axes(config.width, config.vertical_axes, config.axis_spacing, map_rng)
     city = City(config.width, config.height, horizontal, vertical)
+    # Build roads first: a building is eligible only if it has a legal service
+    # access. The saved access stays fixed for all trips involving that building.
     candidates = [(x, y) for x in range(config.width) for y in range(config.height)
                   if (x, y) not in city.roads and city.possible_accesses((x, y))]
     if len(candidates) < config.buildings:
@@ -154,6 +140,8 @@ def generate(config: Config) -> Scenario:
         raise ValueError(f"Only {len(eligible)} distinct initial taxi positions")
     positions = fleet_rng.sample(eligible, config.taxis)
     fleet = tuple(TaxiInitial(i, p, fleet_rng.choice(city.headings(p))) for i, p in enumerate(positions))
+    # Prepare eligible destinations instead of repeatedly drawing invalid trips.
+    # Distinct buildings may share an access, so building IDs alone are not enough.
     destinations = {b.building_id: tuple(d.building_id for d in buildings if d.access != b.access)
                     for b in buildings}
     if not all(destinations.values()):

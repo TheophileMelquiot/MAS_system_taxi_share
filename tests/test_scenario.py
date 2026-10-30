@@ -5,7 +5,7 @@ import json
 import pytest
 from taxishare.config import Config
 from taxishare.city import Building, City
-from taxishare.scenario import generate, Scenario, TaxiInitial
+from taxishare.scenario import generate, TaxiInitial
 
 
 @pytest.mark.parametrize("options", [dict(capacity=5), dict(taxis=0), dict(width=6),
@@ -29,17 +29,15 @@ def test_four_random_streams_are_isolated():
     assert first.fleet == changed_times.fleet
 
 
-def test_scenario_round_trip_and_schema(tmp_path):
+def test_scenario_export_preserves_complete_generated_inputs(tmp_path):
     scenario = generate(Config(requests=3))
     path = tmp_path / "scenario.json"
     scenario.save(path)
-    assert Scenario.load(path) == scenario
-    assert Scenario.load(path).fingerprint == scenario.fingerprint
-    raw = json.loads(path.read_text())
-    raw["schema_version"] = 0
-    path.write_text(json.dumps(raw))
-    with pytest.raises(ValueError, match="version"):
-        Scenario.load(path)
+    # JSON turns tuples into arrays. Compare the complete exported inputs in
+    # that representation without recreating a scenario-file loading feature.
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    assert raw == json.loads(json.dumps(scenario.to_dict()))
+    assert generate(scenario.config).fingerprint == scenario.fingerprint
 
 
 def test_generated_defaults_and_accesses():
