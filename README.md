@@ -23,11 +23,14 @@ python -m venv .venv
 ```
 
 L'interface est en anglais. Elle permet de démarrer, mettre en pause, avancer de 0,2 s, rejouer,
-modifier les paramètres de génération et exporter.
+modifier les paramètres de génération et exporter. Le formulaire ne présente que
+les taxis, les demandes, la fenêtre d'apparition, la capacité et la graine.
+Les autres paramètres restent dans `Config` et accessibles en ligne de commande ;
+générer depuis l'interface conserve leurs valeurs courantes.
 Modifier un champ ne change pas le monde courant : cliquer sur
 « Generate with these parameters » applique ces valeurs à un nouveau scénario.
 Une même graine et les mêmes paramètres reproduisent la même génération.
-Le nombre de pas par rafraîchissement change la cadence de l'animation,
+Le réglage « Animation speed » change la cadence de l'animation,
 sans modifier la durée du pas ni les décisions.
 
 Les clients attendant au même accès sont affichés en ligne, un point par personne :
@@ -62,6 +65,45 @@ retiré. Pour reproduire une génération, conserver les mêmes paramètres et l
 graine avec la même version du code. Le bouton « Replay scenario » réinitialise
 le scénario courant conservé en mémoire.
 
+## Comparaison minimale individuel / partagé
+
+```powershell
+.\.venv\Scripts\python.exe run_experiments.py
+.\.venv\Scripts\python.exe run_experiments.py --seeds 17 18 19 --requests 30 --output output/comparison-30
+```
+
+Par défaut, le script compare les capacités **1 et 3** sur les graines **2026 à
+2030**, avec huit taxis et 60 demandes entre 0 et 300 s. Il génère une seule fois
+les entrées de chaque graine et les réutilise pour deux modèles ne différant que
+par leur capacité. Les exécutions sont successives et utilisent le même moteur ;
+aucune comparaison n'est ajoutée dans l'interface.
+
+Les options se limitent à `--seeds`, `--taxis`, `--requests`,
+`--appearance-seconds`, `--max-seconds` et `--output`.
+Les graines doivent être distinctes et positives ou nulles.
+
+Dans `output/comparison/` :
+
+| Fichier ou dossier | Contenu |
+| --- | --- |
+| `study.json` | Paramètres, graines, capacités, conventions et paires exclues |
+| `comparison.csv` | Effectifs livrés, statuts, mesures des deux modes et écarts par graine |
+| `summary.csv` | Moyennes par mode, moyenne et écart-type des différences appariées, nombre de paires utilisables |
+| `seed-<graine>/individual/`, `seed-<graine>/shared/` | Exports habituels de chaque exécution, sans figure ni journal détaillé des messages |
+
+Les mesures comparées sont la distance totale, l'attente moyenne, le temps total
+moyen et le taux de distance partagée. Les écarts sont **partagé moins individuel**,
+calculés d'abord pour chaque graine. Le taux reste une fraction de 0 à 1 ; un écart
+de `0.10` correspond à dix points de pourcentage. L'écart-type est celui
+d'échantillon sur les différences, absent avec moins de deux paires utilisables.
+
+Une paire incomplète reste exportée, avec ses effectifs et ses causes d'arrêt,
+mais ses écarts sont absents et elle est exclue de la synthèse. Une mesure non
+définie, par exemple une moyenne de durée sans demande, reste absente et possède
+son propre effectif de paires. Le code de sortie vaut 2 si une paire est incomplète.
+Les fichiers de comparaison sont actualisés après chaque paire terminée.
+Choisir un autre dossier de sortie pour conserver une étude précédente.
+
 ## Organisation et parcours de lecture
 
 | Fichier | Responsabilité |
@@ -80,6 +122,7 @@ le scénario courant conservé en mémoire.
 | `taxishare/visualization.py` | Affichage en lecture seule |
 | `app.py` | Commandes de l'interface locale Tkinter |
 | `run_simulation.py` | Exécution d'un scénario sans interface |
+| `run_experiments.py` | Comparaisons appariées capacité 1 / 3 sur plusieurs graines |
 
 Pour comprendre les comportements, lire d'abord `passenger.py` et `taxi.py`,
 puis `model.py` pour leur ordre d'activation et `planning.py` pour les contraintes.
@@ -162,7 +205,8 @@ pour conserver plusieurs exécutions.
 - [Correspondance entre cahier, code et tests](docs/rules-coverage.md)
 - [Vérifications effectuées et résultats](docs/validation.md)
 
-La comparaison individuel/partagé, le multi-hop entre taxis et le modèle
-d'émissions ne font pas partie de la cible courante. Les distances ne sont pas
-des quantités de CO2. Le rapport d'analyse demandé par le professeur demeure
-un livrable distinct ; les exports fournissent les données nécessaires à sa préparation.
+La comparaison individuel/partagé est limitée au script décrit ci-dessus.
+Le multi-hop entre taxis et le modèle d'émissions restent hors périmètre.
+Les distances ne sont pas des quantités de CO2. Le rapport d'analyse demandé
+par le professeur demeure un livrable distinct ; les exports fournissent les
+données nécessaires à sa préparation.

@@ -1,5 +1,42 @@
 # Vérifications effectuées
 
+## Simplification et comparaison minimale, 30 octobre 2026
+
+Suite complète dans l'environnement du dépôt : **51 tests réussis en 16,43 s**.
+Les sept nouveaux cas vérifient la génération unique et les entrées communes,
+l'exclusion des paires incomplètes, les différences appariées et leur écart-type,
+les statistiques absentes sans demande et le refus de listes de graines invalides.
+
+Le script a été exécuté avec ses paramètres par défaut : cinq graines de 2026 à
+2030, capacités un et trois, huit taxis et 60 demandes entre 0 et 300 s.
+**Les dix simulations sont complètes, avec 60 clients livrés chacune.** Les
+fichiers exportés confirment que seule la capacité diffère entre les deux entrées
+de chaque paire. Les exports se trouvent dans `output/comparison/`.
+
+| Mesure | Moyenne individuel | Moyenne partagé | Moyenne des écarts | Écart-type des écarts |
+| --- | ---: | ---: | ---: | ---: |
+| Distance totale (m) | 168 100 | 109 220 | -58 880 | 21 446,61 |
+| Attente moyenne (s) | 618,50 | 358,17 | -260,32 | 92,17 |
+| Temps total moyen (s) | 725,44 | 468,14 | -257,31 | 91,31 |
+| Fraction de distance partagée | 0 | 0,19375 | +0,19375 | 0,04306 |
+
+Les écarts sont partagé moins individuel, avec cinq paires utilisables par mesure.
+Ces résultats sont des vérifications d'exécution sur ces entrées, sans prétention
+de validité pour une ville réelle. Les règles de circulation n'ont pas changé.
+
+Un contrôle de l'interface Tk a vérifié les cinq champs, la conservation de
+paramètres masqués modifiés (largeur, détour et plafond), le pas manuel et le
+rejeu en mémoire. La fenêtre a ensuite été inspectée visuellement sur Windows.
+Sa taille initiale tient désormais compte de l'écran et de sa mise à l'échelle ;
+la marge des légendes a été agrandie pour que les deux légendes restent visibles.
+Leurs bornes ont aussi été vérifiées dans le canevas.
+
+Les anciens fichiers `app.py`, `run_experiments.py`, `requirements.txt` et README
+du dossier parent ont été déplacés dans `archives/ancienne_version/`. Leurs
+empreintes SHA-256 avant et après déplacement sont identiques. Un nouveau README
+du parent désigne le dépôt actif et son environnement. Les PDF, les notes et les
+environnements virtuels sont restés à leur emplacement.
+
 ## Vérification de la branche yanis, 30 octobre 2026
 
 Environnement isolé `.venv` : Windows, Python 3.12.2, Mesa 3.3.1,

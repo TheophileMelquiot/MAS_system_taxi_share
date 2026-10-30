@@ -19,7 +19,7 @@ def create_figure():
 def draw_model(figure, model):
     """No random draws, time advancement or decision changes are allowed here."""
     figure.clear()
-    layout = figure.add_gridspec(3, 2, width_ratios=(1.5, 1), height_ratios=(1, 1, 0.35))
+    layout = figure.add_gridspec(3, 2, width_ratios=(1.5, 1), height_ratios=(1, 1, 0.5))
     city_ax = figure.add_subplot(layout[:2, 0])
     legend_ax = figure.add_subplot(layout[2, 0])
     service_ax = figure.add_subplot(layout[0, 1])

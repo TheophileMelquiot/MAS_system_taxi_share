@@ -20,7 +20,9 @@ locale. Tkinter et l'API objet Matplotlib respectent ce choix.
 Les protocoles de messages, la génération de routes et l'insertion contrainte
 sont spécifiques au métier. Mesa fournit la structure multi-agents, l'espace,
 l'activation et la collecte ; ces politiques sont donc implémentées séparément.
-L'infrastructure d'expériences comparatives reste reportée conformément au cahier.
+La comparaison, initialement reportée dans le cahier, est désormais autorisée
+par l'utilisateur : un script minimal réutilise ce moteur, sans double monde
+dans l'interface. Les deux capacités sont exécutées successivement.
 
 Références techniques consultées :
 
@@ -182,3 +184,31 @@ augmente avec le nombre d'engagements et d'orientations possibles. Aucun plafond
 silencieux du nombre d'engagements ou des solutions n'est ajouté pour accélérer.
 L'occupation moyenne et le taux de clients ayant partagé ne sont pas ajoutés :
 la mesure retenue est la distance de taxi parcourue avec au moins deux personnes.
+
+## Interface simplifiée et comparaisons minimales, 30 octobre 2026
+
+Le formulaire est limité aux taxis, demandes, fenêtre d'apparition, capacité et
+graine. Les autres valeurs de `Config` sont préservées lors de la génération ;
+elles restent accessibles dans le code et en ligne de commande. Carte, graphiques,
+rejeu en mémoire et export sont conservés. Le chargement de scénarios reste retiré.
+
+`run_experiments.py` génère une seule fois par graine, puis construit deux
+scénarios dont seule la capacité diffère : un et trois passagers. Les empreintes
+complètes des scénarios diffèrent donc aussi, puisque la configuration est incluse.
+Les axes, bâtiments, positions et orientations initiales, voyages et horaires
+sont identiques dans chaque paire. Cinq graines fixées à l'avance sont utilisées
+par défaut, de 2026 à 2030, sans sélection sur les résultats.
+
+Les effectifs et statuts permettent de vérifier le service rendu. Seules distance
+totale, attente moyenne, temps total moyen et fraction de distance partagée sont
+agrégés. Les différences sont calculées par graine avant moyenne et écart-type
+d'échantillon. Les paires incomplètes sont exclues ; chaque mesure conserve son
+effectif utilisable et les valeurs inconnues restent absentes. Aucune nouvelle
+mesure de satisfaction, de congestion ou d'émissions n'est ajoutée.
+
+L'interdiction des demi-tours reste active. Un éventuel changement serait un
+chantier séparé : routage sur les positions, orientation conservée pour l'affichage,
+adaptation du planificateur, de la validation et des tests. Il faudrait conserver
+les budgets et les protections des engagements et refaire les comparaisons avec
+les nouvelles règles. Cette évolution n'est ni nécessaire à la comparaison actuelle,
+ni implémentée par cette simplification.

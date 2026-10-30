@@ -104,7 +104,8 @@ def write_csv(path, rows, fields=None):
 
 def provenance():
     root = Path(__file__).resolve().parents[1]
-    paths = sorted((root / "taxishare").glob("*.py")) + [root / "app.py", root / "run_simulation.py"]
+    paths = sorted((root / "taxishare").glob("*.py")) + [root / name for name in
+            ("app.py", "run_simulation.py", "run_experiments.py")]
     hashes = {str(p.relative_to(root)): sha256(p.read_bytes()).hexdigest() for p in paths if p.exists()}
     sources = {p.name: sha256(p.read_bytes()).hexdigest() for p in root.glob("*.pdf")}
     return {"python": platform.python_version(), "platform": platform.platform(),

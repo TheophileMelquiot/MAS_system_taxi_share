@@ -45,7 +45,7 @@ comme des contraintes actuelles.
 | 32. Interface | `app.py` et `visualization.py`, un monde local | Contrôle visuel, pas manuel, démarrage, pause, rejeu |
 | 33. Exports | JSON, CSV, PNG, empreintes source et environnement | Exports partiels et complets, conservation des entrées du scénario |
 | 34. Vérifications | Suite pytest et assertions métier | Voir `validation.md` pour les résultats exécutés |
-| 35. Comparaisons reportées | Pas de double monde ni d'infrastructure comparative imposée | Périmètre documenté ; graines variées utilisées seulement pour vérification |
+| 35. Comparaisons initialement reportées, ajout minimal autorisé ensuite | `run_experiments.py` : capacités 1 et 3 sur les mêmes entrées, exécutions successives ; interface à un monde | `tests/test_experiments.py` : entrées appariées, paires incomplètes exclues et statistiques des différences |
 | 36. Exigences professeur | Bibliothèque Mesa, CFP/réponses, MultiGrid, visualisation et exports | Exécution complète du programme ; rapport académique distinct |
 | 37. Principes du cours | États, perceptions, décisions, effets et ordonnancement explicites | Reproductibilité et invariance à l'ordre physique testé |
 | 38. Cahier de l'équipier | Uniquement les apports adoptés dans la cible U71 | Pas d'abandon, relance périodique, limite de deux clients ou délai de collecte |

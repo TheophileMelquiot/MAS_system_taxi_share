@@ -1,5 +1,6 @@
 """Local Tk interface. Rendering and wall-clock cadence never change physics."""
 
+from dataclasses import replace
 import time
 from pathlib import Path
 import tkinter as tk
@@ -12,13 +13,9 @@ from taxishare.metrics import export_results, summary
 from taxishare.visualization import create_figure, draw_model
 
 LABELS = {
-    "width": "Width (cells)", "height": "Height (cells)",
-    "horizontal_axes": "Horizontal axes", "vertical_axes": "Vertical axes",
-    "axis_spacing": "Minimum spacing", "buildings": "Buildings", "taxis": "Taxis",
+    "taxis": "Taxis",
     "requests": "Requests", "appearance_seconds": "Arrivals until (s)",
-    "capacity": "Seats per taxi", "congestion_threshold": "Free-flow threshold K",
-    "detour_rate": "Detour rate", "detour_cap_m": "Detour limit (m)",
-    "seed": "Seed", "max_seconds": "Simulation time limit (s)",
+    "capacity": "Seats per taxi", "seed": "Seed",
 }
 
 
@@ -26,7 +23,11 @@ class Application:
     def __init__(self, root):
         self.root = root
         self.root.title("TaxiShare | Mesa multi-agent simulation")
-        self.root.geometry("1400x900")
+        # Tk reports logical pixels under Windows display scaling. A fixed
+        # 1400x900 window can extend off-screen and hide the bottom legends.
+        width = min(1400, self.root.winfo_screenwidth() - 60)
+        height = min(900, self.root.winfo_screenheight() - 100)
+        self.root.geometry(f"{width}x{height}")
         self.playing = False
         self.model = TaxiShareModel(generate(Config()))
         self.model.scenario.save(Path(__file__).parent / "output/gui/scenario.json")
@@ -44,18 +45,18 @@ class Application:
         panel = ttk.Frame(self.root, padding=14)
         panel.pack(side="left", fill="y")
         ttk.Label(panel, text="TAXISHARE", font=("Segoe UI", 19, "bold")).pack(anchor="w")
-        ttk.Label(panel, text="One world · Autonomous agents\nShared clock: 0.2 s").pack(anchor="w", pady=(2, 12))
+        ttk.Label(panel, text="Shared taxis in a generated city").pack(anchor="w", pady=(2, 12))
         for label, callback in (("Start / Pause", self.toggle), ("Advance by 0.2 s", self.single_step),
                                 ("Replay scenario", self.replay),
                                 ("Export results", self.export)):
             ttk.Button(panel, text=label, command=callback).pack(fill="x", pady=2)
-        ttk.Label(panel, text="Steps per refresh").pack(anchor="w", pady=(12, 0))
+        ttk.Label(panel, text="Animation speed").pack(anchor="w", pady=(12, 0))
         ttk.Spinbox(panel, from_=1, to=500, textvariable=self.speed, width=12).pack(fill="x")
         ttk.Separator(panel).pack(fill="x", pady=12)
         form = ttk.Frame(panel)
         form.pack(fill="x")
-        for row, (name, field) in enumerate(Config.__dataclass_fields__.items()):
-            ttk.Label(form, text=LABELS[name]).grid(row=row, column=0, sticky="w", pady=2)
+        for row, (name, label) in enumerate(LABELS.items()):
+            ttk.Label(form, text=label).grid(row=row, column=0, sticky="w", pady=2)
             variable = tk.StringVar(value=str(getattr(self.model.config, name)))
             self.inputs[name] = variable
             ttk.Entry(form, textvariable=variable, width=10).grid(row=row, column=1, padx=(8, 0))
@@ -122,9 +123,11 @@ class Application:
 
     def new_scenario(self):
         try:
-            values = {name: type(field.default)(self.inputs[name].get())
-                      for name, field in Config.__dataclass_fields__.items()}
-            self.set_scenario(generate(Config(**values)))
+            values = {name: type(Config.__dataclass_fields__[name].default)(variable.get())
+                      for name, variable in self.inputs.items()}
+            # Editing the main controls must preserve the current map settings,
+            # detour limits and other parameters that are not shown in the form.
+            self.set_scenario(generate(replace(self.model.config, **values)))
         except (ValueError, TypeError) as exc:
             messagebox.showerror("Invalid configuration", str(exc))
 
