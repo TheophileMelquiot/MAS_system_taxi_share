@@ -1,0 +1,31 @@
+{
+  "python": "3.12.2",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "packages": {
+    "mesa": "3.3.1",
+    "matplotlib": "3.10.8",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scipy": "1.18.1"
+  },
+  "source_sha256": {
+    "taxishare\\__init__.py": "7276349766846a0f69f8732bb54b7ab52e383b51cac2882aabd190b366261a60",
+    "taxishare\\city.py": "5f36c183777da8119ef64234c2c2818bbb252b42208c1eb852990bdd05bdc401",
+    "taxishare\\config.py": "de7f379c575d1805b984f9e2f007a198065c8fb67c3efbdbaa5b8ce7282ae6b8",
+    "taxishare\\contracts.py": "3206ff3f0fb85b5871e184014d23df101379df6876aef9a92bd558b3b496a47f",
+    "taxishare\\messaging.py": "a315e0521b6b2ba99899f51e1a1714e9d9592b937d84f9729e7ec19fc492ca3d",
+    "taxishare\\metrics.py": "7bfcede2c47391978dd848c7b25976931bc414458c377180b4c004832774611b",
+    "taxishare\\model.py": "a7fc52f4ee53b30d62b672af11eb7ddd81c244185a8cca4356e556a5b8e4b225",
+    "taxishare\\passenger.py": "658aec5a808c0e5bb5486ac1a15584e50bce66c1cbfc86e6eae57b6516c5c27c",
+    "taxishare\\planning.py": "5d5567400f1746a71aa31e886caf94252e43d5d4caa98b134d9e6f24f5824871",
+    "taxishare\\scenario.py": "fba162053a42fd1438b05630e16a1995bdd50e03dc647c7a9bd40942e6f406f8",
+    "taxishare\\taxi.py": "22a3af72527831d44780a74516556ff2ce3299e5f3fe05bd9387626e9a20051a",
+    "taxishare\\traffic.py": "3f564744fff019c7c7bcdb1fbda6d432c12815b535969f7f016215828d9c84dd",
+    "taxishare\\visualization.py": "3fc422418cb71240ae8b6e6991425c41557e52af88211181629a8530f0271db7",
+    "app.py": "9532bd276b3db50200a3b6e5456ff0299246b429e2f9fd06e9ec1a9271683e4e",
+    "run_simulation.py": "1f899ab1dca4da7eedfb8c7ea23cdf9463fd640e4d17a52ad242a0042aa043c4",
+    "run_experiments.py": "97ffc3779e8df9e38f311b34386f01a1f2e02fb4b1f1dbf06a370ffde5d4f5bf"
+  },
+  "rule_document_sha256": {},
+  "rules": "U01-U71 plus current user clarifications; see docs/technical-decisions.md"
+}

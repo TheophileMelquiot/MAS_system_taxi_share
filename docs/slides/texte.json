@@ -1,0 +1,243 @@
+{
+  "source": "session-4.pdf",
+  "sha256": "6af98d9be9ac2abca7241093dca7d9cce3703dd5f74d1ae7e027d571a49fc700",
+  "page_count": 47,
+  "extraction": "pypdf, couche texte uniquement, ponctuation U+2014 remplacée par deux-points",
+  "pages": [
+    {
+      "page": 1,
+      "slide": 1,
+      "text": "Foundations of Agent-based systems\nSession 4 – Simulation\nNicolas Sabouret\nUniversité Paris-Saclay\nSeptember 2026"
+    },
+    {
+      "page": 2,
+      "slide": 2,
+      "text": "Agenda Simulation MABS Mesa\nAgenda\n1 2026/09/07– Introduction and basics\n1:30 lecture: basics of MAS\n0:30 tutorial: MAS modeling\n1:00 practical session: MAS in Java\n2 2026/09/14– Communication and platforms\n1:00 lecture: communication, platforms\n1:00 practical session: MAS in Java (cont.)\n1:00 tutorial : JADE\n3 2026/09/28– Practical session : JADE\n➜2026/10/05– MultiAgent Based Simulation\n1:00 lecture: theory of MABS\n2:00 practical session: MESA\n5 2026/10/12– Practical session : MABS project\n6 2026/10/19– Agentic AI (practical session)\nM1 DKAI Foundations of Agent-based systems 2/38"
+    },
+    {
+      "page": 3,
+      "slide": 3,
+      "text": "Agenda Simulation MABS Mesa\nSession 4\nMultiAgent Based\nSimulation\nM1 DKAI Foundations of Agent-based systems 3/38"
+    },
+    {
+      "page": 4,
+      "slide": 4,
+      "text": "Agenda Simulation MABS Mesa\nSession 4: agenda\nSimulation\nMultiAgent Based Simulation\nThe Mesa platform\nPW : Mesa basics : the money model\nPW : Mesa visualization : solara or pygame interface\nM1 DKAI Foundations of Agent-based systems 4/38"
+    },
+    {
+      "page": 5,
+      "slide": 5,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nWhat is a simulation ?\nShannon, 1977\n[...] designing a model of a real system\nand conducting experiments with this model\nfor [...] understanding the behaviour of the system\nor [...] evaluating various strategies [...] for the operation of the system\nReality Model\nabstraction\nResult\nrevision\nsimulation\nGoals\nTest an hypothesis, study stable situations or resilience capabilities,etc.\nM1 DKAI Foundations of Agent-based systems 5/38"
+    },
+    {
+      "page": 6,
+      "slide": 6,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nComputer simulation\nIterative process (Fishwick, 1997)\nDesign a model of a physical system\nExecuting the model on a digital computer\nAnalyzing the execution output\nM1 DKAI Foundations of Agent-based systems 6/38"
+    },
+    {
+      "page": 7,
+      "slide": 7,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nDynamic systems\nThe majority of what we want to simulate are Dynamic Systems.\nThe black box problem\n✓Observable behaviour\n(reactions to inputs)\n✗Internal structure &\ndynamics\nDynamic System\ninternal stateinput output\nExternal Behaviour\nNote that an agent is a dynamic system too...\nProblem\n✓Computer Simulation→Formal Specifications\n✗Lack of knowledge about the system’s internal\n✗Choice of formalism constraints the observations\nM1 DKAI Foundations of Agent-based systems 7/38"
+    },
+    {
+      "page": 8,
+      "slide": 7,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nDynamic systems\nThe majority of what we want to simulate are Dynamic Systems.\nThe black box problem\n✓Observable behaviour\n(reactions to inputs)\n✗Internal structure &\ndynamics\nDynamic System\ninternal stateinput output\nExternal Behaviour\nNote that an agent is a dynamic system too...\nProblem\n✓Computer Simulation→Formal Specifications\n✗Lack of knowledge about the system’s internal\n✗Choice of formalism constraints the observations\nM1 DKAI Foundations of Agent-based systems 7/38"
+    },
+    {
+      "page": 9,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel SimulatorModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 10,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel SimulatorModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 11,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel SimulatorModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 12,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel\nSimulatorModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 13,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel Simulator\nModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 14,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel SimulatorModelingRelationship\nSimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 15,
+      "slide": 8,
+      "text": "Agenda Simulation MABS Mesa\nDefinition Methodology\nMethodology\nModeling & Simulation (M&S) theory\nSourcesystem\nExperimental Frame\nModel SimulatorModelingRelationship SimulationRelationship\n1 What we want to model (source of observable data)\n2 What we want to study (goal of the simulation + conditions)\n3 Specifications to simulate the behaviour of the system\n4 Computing system that can run the model\n5 Validity of the modelw.r.tphysical system\n6 Correct implementation of the simulationw.r.tmodel\nM1 DKAI Foundations of Agent-based systems 8/38"
+    },
+    {
+      "page": 16,
+      "slide": 9,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nMultiAgent Based Simulation\nA MultiAgent System to simulate a Dynamic System\nAgents↔physical entities\nActions and Interactions↔behaviours\nExamples\nSocial simulation (e.g.opinion dynamics, road traffic, household)\nPhysical phenomena (e.g.weather, geology, pandemy)\nTechnical systems (e.g.electrical grid)\nM1 DKAI Foundations of Agent-based systems 9/38"
+    },
+    {
+      "page": 17,
+      "slide": 10,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nWhy MABS?\nSimulation of Complex Systems\nWhen equations cannot capture everything\n➜Model (simpler) subsystems & combine them\n➜Study emerging phenomenons from individual choices\n➜Find parameters spaces in which stable situations appear\nExplainable AI\nAnalysing the microscopic level\nModelling as close to reality as possible\nScalability\nDistributed computing & parallel simulation\nComplements equation-based models!\nM1 DKAI Foundations of Agent-based systems 10/38"
+    },
+    {
+      "page": 18,
+      "slide": 11,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nThe Prey-Predator example\nGoal\nStudy how populations of preys &\npredators evolve in time\nVoltera, 1926\nEquations Based Model (EBM)\nx=nb of preys,y=nb of preds\ndx(t)\ndt =a.x(t)−b.x(t).y(t)\ndy(t)\ndt =c.x(t).y(t)−d.y(t)\nwitha,creproduction rates\nandb,ddeath rate\nM1 DKAI Foundations of Agent-based systems 11/38"
+    },
+    {
+      "page": 19,
+      "slide": 12,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nRemarks\nProperties of EBM\nCapture variability over time through interrelated equations\n✓Represents global variation of the populations (behaviours result)\n✗No explicit representation of individuals & interactions\n✗Large number of parameters sometimes hard to\nunderstand/manipulate\nOn the contrary, MABS\n✓Focus on entities and their interaction (study individual behaviours)\n✗Emergence of the global phenomenon not always easy to figure out\n✗Large number of parameters also...\nM1 DKAI Foundations of Agent-based systems 12/38"
+    },
+    {
+      "page": 20,
+      "slide": 13,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nPrey Predator in MABS\nAgents\nPrey: move, reproduce, flee, die (opt. eat)\nPredator: move, reproduce, hunt (& eat), die\nEnvironment\nGrid space\n(opt.) Grass growth\nDifficulty\nFind the parameter values that reproduces the global phenomenon\n(a.k.a. stylised fact)\nM1 DKAI Foundations of Agent-based systems 13/38"
+    },
+    {
+      "page": 21,
+      "slide": 13,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nPrey Predator in MABS\nAgents\nPrey: move, reproduce, flee, die (opt. eat)\nPredator: move, reproduce, hunt (& eat), die\nEnvironment\nGrid space\n(opt.) Grass growth\nDifficulty\nFind the parameter values that reproduces the global phenomenon\n(a.k.a. stylised fact)\nM1 DKAI Foundations of Agent-based systems 13/38"
+    },
+    {
+      "page": 22,
+      "slide": 14,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nDesign methodology\nUse what we have seen for MAS + work incrementally!\nAgents\nList the active entities in the system\nIdentify their actions\nModeling: choose the granularity level\nDefine the interactions between these entities\nPossibly: define the organization\nEnvironment\nList the shared resources (including spatialization)\nModeling questions: discrete?, dynamic?, open?\nTechnical questions: synchronicity?\nM1 DKAI Foundations of Agent-based systems 14/38"
+    },
+    {
+      "page": 23,
+      "slide": 15,
+      "text": "Agenda Simulation MABS Mesa\nOverview Prey-Predator Methodology\nDesign methodology: summary\nThe four aspects of MABS models\nBehavior: modelling of agents’ deliberation processes\nEnvironment: physical objects and dynamics of the environment\nScheduling: how time evolves and agents’ runtimes interleave\nInteraction: the result of actions\nW. Ouerdane\nM1 DKAI Foundations of Agent-based systems 15/38"
+    },
+    {
+      "page": 24,
+      "slide": 16,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMESA\nM1 DKAI Foundations of Agent-based systems 16/38"
+    },
+    {
+      "page": 25,
+      "slide": 17,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa: Agent-Based Modeling in Python\nhttps://mesa.readthedocs.io/\nGeneral principle\nSimulation-oriented MAS platform\nBuilt-in components : grid, agent scheduler, seed management\nPython API→access to python data analysis tools\nNetlogo-like web visualization interface\nVery active development\nM1 DKAI Foundations of Agent-based systems 17/38"
+    },
+    {
+      "page": 26,
+      "slide": 18,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa: main components\nClassical MAS components\nAgents→classmesa.Agent\nEnvironment→classmesa.Model\nRuntime→classmesa.AgentSet+ Model\nSpatial situation→classes inmesa.discretespace\nModel\nGrid\nRandom\nAgentSet Agent\nCell\nCellAgent\nM1 DKAI Foundations of Agent-based systems 18/38"
+    },
+    {
+      "page": 27,
+      "slide": 19,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa: basics\nThe environment\nSubclass of mesa.Model\nclassMyModel(mesa.Model):\nInitialize with random seed\ndef __init__(self,...):\nsuper().__init__(seed=None)\nCreate agents\nSomeAgentClass.create_agents(model=self,n=...)\nRun the agents\ndefstep(self):\nself.agents.shuffle_do(\"procedural_loop\")\nRun the model\nmodel = MyModel(...)\nmodel.run_for(number_of_turns)\nM1 DKAI Foundations of Agent-based systems 19/38"
+    },
+    {
+      "page": 28,
+      "slide": 20,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa: basics (cont.)\nThe agents\nSubclass of mesa.Agent\nclassMyAgent(mesa.Agent):\nReceives the model as parameter\ndef __init__(self, model, ...):\nsuper().__init__(model)\nDefine the procedural loop\ndefprocedural _loop(self):\n# generally named \"step\"\n# no other parameters!\n# code of the loop:\n... # 1. perceive\n... # 2. deliberate\n... # 3. act\nM1 DKAI Foundations of Agent-based systems 20/38"
+    },
+    {
+      "page": 29,
+      "slide": 21,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMinimal example\nimportmesa\n# Agent\nclassMyAgent(mesa.Agent):\ndef __init__(self, model):\nsuper().__init__(model)\ndefstep(self):\nprint(\"hello world\")\n# Environment + Runtime\nclassMyModel(mesa.Model):\ndef __init__(self, n _agents):\nsuper().__init__()\nMyAgent.create_agents(self, n _agents) # AgentSet\n# runtime\ndefstep(self):\nself.agents.shuffle_do(\"step\") # all agents -> 1 step\n# Instanciate and run the model\nmodel = MyModel(n _agents=5)\nmodel.run_for(1)\nM1 DKAI Foundations of Agent-based systems 21/38"
+    },
+    {
+      "page": 30,
+      "slide": 22,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nThings to know about MESA\n1. Encapsulation\nPython has no OO access modifier\n➜Agents can access other agents’ variables!\nand this isbad!\nExample:\nclassMyAgent(mesa.Agent):\n# init\ndef __init__(self, model):\nsuper().__init__(model)\nself.my_secret_variable = self.random.randint(1,100)\n# step\ndefstep(self):\n# find any other agent...\nothers = [aforainself.model.agentsifais notself]\nifothers:\nother = self.random.choice(cellmates)\n# ...and steal its secret variable!\nself.stolen_value = other.my _secret_variable\nM1 DKAI Foundations of Agent-based systems 22/38"
+    },
+    {
+      "page": 31,
+      "slide": 23,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nThings to know about MESA\n1. Encapsulation\n2. Procedural loop\nMesa does not force perception→deliberation→action\n➜You can write any code in the step method\nand this isvery bad!\nExample:\ndefstep(self):\nself.x =sum(a.yforainself.model.schedule.agents)\nself.model.any_method(x)\nself.other_agent.any_method(x)\n✗Complexityn 2 with hidden perception\n✗2 actions in one turn\nM1 DKAI Foundations of Agent-based systems 23/38"
+    },
+    {
+      "page": 32,
+      "slide": 24,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nThings to know about MESA\n1. Encapsulation\n2. Procedural loop\nMesa does not force perception→deliberation→action\n➜You can write any code in the step method\nand this isvery bad too!\n✓It would be better to write:\ndefstep(self):\nself.perceive() # update internal state\na = self.decide() # select an action\nself.act(a) # perform the action\n... with ad-hoc methods\nM1 DKAI Foundations of Agent-based systems 24/38"
+    },
+    {
+      "page": 33,
+      "slide": 25,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nThings to know about MESA\n1. Encapsulation\n2. Procedural loop\n3. Synchronous runtime\n➜Avoid long computation in the procedural loop\n✗All other agents are stopped during one’s step\n➜If necessary, use external calls to some Thread\n✓Preferably in the environment\nM1 DKAI Foundations of Agent-based systems 25/38"
+    },
+    {
+      "page": 34,
+      "slide": 26,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nThings to know about MESA\n1. Encapsulation\n2. Procedural loop\n3. Synchronous runtime\n4. No direct communication\n➜All communications are done through variables in the\nenvironment (Model)\nM1 DKAI Foundations of Agent-based systems 26/38"
+    },
+    {
+      "page": 35,
+      "slide": 27,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nDirect communication\nYou can write your own message transport mechanism !\nclassMessage:\n\"\"\"Message structure\"\"\"\nREQUEST = 1\nREQUEST_DO = 2\nINFORM = 3\ndef __init__(self, performatif:int, content:str, ...):\nself.performatif = performatif\nself.content = content\n...\nclassMessageReceiver(mesa.discrete _space.CellAgent):\n\"\"\"Agent that can receive messages\"\"\"\ndef __init__(self, model):\nsuper().__init__(model)\nself.messages = []\ndefnotify(self, message: Message, sender):\nself.messages.append((message, sender))\nclassMyAgent(MessageReceiver):\n...\ndefperceive(self):\nreturnself.read _messages()\n# or any other message management\nM1 DKAI Foundations of Agent-based systems 27/38"
+    },
+    {
+      "page": 36,
+      "slide": 28,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nPractical work\nM1 DKAI Foundations of Agent-based systems 28/38"
+    },
+    {
+      "page": 37,
+      "slide": 29,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa Basics\nOpen the notebook\nsession4_notebook.ipynb\nAbout this work\nBased on Mesa tutorials\nhttps://mesa.readthedocs.io/latest/tutorials/0_first_model.html\nhttps://mesa.readthedocs.io/latest/tutorials/4_adding_space.html\nhttps://mesa.readthedocs.io/latest/tutorials/5_collecting_data.html\nCan run in standalone or on Google colab\nLocal package installation→must run in a virtualenv!\nGeneral idea\nSimple simulation of inequality emergence in society(KISS model)\nM1 DKAI Foundations of Agent-based systems 29/38"
+    },
+    {
+      "page": 38,
+      "slide": 30,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nGeneral rules\n1 Define agent portrayal\n2 Define the model parameters = grid size + sliders\n3 Instantiate the renderer\nDoes not work with Google Colab\nUse local installation (jupyter or, better, standalone)\nM1 DKAI Foundations of Agent-based systems 30/38"
+    },
+    {
+      "page": 39,
+      "slide": 31,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nAgent portrayal\nA fonction that returns the visual representation of the agent\nfrommesa.visualization.componentsimportAgentPortrayalStyle\ndefagent _portrayal(agent):\n# Default agents are small orange dots\nportrayal = AgentPortrayalStyle(size=50, color=\"tab:orange\")\n# Wealthy agents are large blue dots\nifagent.wealth > 0:\nportrayal.update((\"color\", \"tab:blue\"), (\"size\", 100))\nreturnportrayal\nTips\nUse marker=\"^\" to customize the agent’s appearance\nUse alpha=0.8 for transparency and zorder=2 for superpositions\n(in multigrids)\nM1 DKAI Foundations of Agent-based systems 31/38"
+    },
+    {
+      "page": 40,
+      "slide": 32,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nGrid renderer\nThe visual representation of the grid space\n# instanciate the model\nmm = MoneyModel(n=50, width=10, height=10)\n# build the renderer\nfrommesa.visualizationimportSpaceRenderer\nrenderer = (\nSpaceRenderer(model=mm, backend=\"matplotlib\")\n.setup_agents(agent_portrayal)\n.render()\n)\nM1 DKAI Foundations of Agent-based systems 32/38"
+    },
+    {
+      "page": 41,
+      "slide": 33,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nModel parameters\nA dictionnary with values for all parameters: size of the grid,\nnumber of agents\nmodel_params = {\n\"n\": {\n\"type\": \"SliderInt\",\n\"value\": 50,\n\"label\": \"Number of agents:\",\n\"min\": 10,\n\"max\": 100,\n\"step\": 1,\n},\n\"width\": 10,\n\"height\": 10,\n}\nAllows to change the model at runtime\nM1 DKAI Foundations of Agent-based systems 33/38"
+    },
+    {
+      "page": 42,
+      "slide": 34,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nMethod #1: solara server\n➜This is the default Mesa visualization method\nhttps://mesa.readthedocs.io/latest/tutorials/6_visualization_basic.html\nmm = MoneyModel(...)\ndefagent _portrayal(agent): ...\nmodel_params = { ... }\nrederer = ...\nfrommesa.visualizationimportSolaraViz\npage = SolaraViz(\nmm,\nrenderer,\nmodel_params=model_params,\nname=\"Boltzmann Wealth Model\"\n)\npage\nCommand linesolara run this _file.pyto start the server\nM1 DKAI Foundations of Agent-based systems 34/38"
+    },
+    {
+      "page": 43,
+      "slide": 35,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nMethod #2: pygame library\n➜Home-made UPSaclay solution(Niccolo Angeli, 2026)\nhttps://github.com/Erocr/mesa_graphics\nWindows only(bug on pygame.font on Linux)\n1 Download the library:mesa_graphicsdirectory\n2 Install pygame\n3 Run as normal python file\nmm = MoneyModel(n=50, width=10, height=10)\ndefagent _portrayal(agent): ...\nmodel_params = { ... }\nfrommesa _graphicsimportMesaGraphics\npage = MesaGraphics(\nmm,\nrenderer,\nmodel_params=model_params,\nname=\"Boltzmann Wealth Model\"\n)\nM1 DKAI Foundations of Agent-based systems 35/38"
+    },
+    {
+      "page": 44,
+      "slide": 36,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nAdding graphs\nDynamic representations based on data collections\nFor Mesa Visualisation:\nfrommesa.visualizationimportmake _plot_component\nFor Mesa Graphics:\nfrommesa _graphicsimportmake _plot_component\nfrommesa _graphicsimportFigureMatplotlib\nfrommatplotlib.figureimportFigure\nSimple example: draw Gini coefficient in time\nGiniPlot = make _plot_component(\"Gini\")\npage = SolaraViz/MesaGraphics( mm, renderer,\nmodel_params=model_params,\nname=\"Boltzmann Wealth Model\",\ncomponents=[GiniPlot] # <- simply add the list of components\n)\nM1 DKAI Foundations of Agent-based systems 36/38"
+    },
+    {
+      "page": 45,
+      "slide": 36,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nAdding graphs\nDynamic representations based on data collections\nFor Mesa Visualisation:\nfrommesa.visualizationimportmake _plot_component\nFor Mesa Graphics:\nfrommesa _graphicsimportmake _plot_component\nfrommesa _graphicsimportFigureMatplotlib\nfrommatplotlib.figureimportFigure\nSimple example: draw Gini coefficient in time\nGiniPlot = make _plot_component(\"Gini\")\npage = SolaraViz/MesaGraphics( mm, renderer,\nmodel_params=model_params,\nname=\"Boltzmann Wealth Model\",\ncomponents=[GiniPlot] # <- simply add the list of components\n)\nM1 DKAI Foundations of Agent-based systems 36/38"
+    },
+    {
+      "page": 46,
+      "slide": 37,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nMesa runtime visualization\nAnother example: histogram of agents’ wealth\ndefHistogram(model):\n# Note: you must initialize a figure using this method instead of\n# plt.figure(), for thread safety purpose\nfig = Figure()\nax = fig.subplots()\nwealth_vals = [agent.wealthforagentinmodel.agents]\n# Note: you have to use Matplotlib’s OOP API instead of plt.hist\n# because plt.hist is not thread-safe.\nax.hist(wealth_vals, bins=10)\nreturnFigureMatplotlib(fig)\npage = MesaGraphics(\nmm,\nrenderer,\nmodel_params=model_params,\nname=\"Boltzmann Wealth Model\",\ncomponents=[(Histogram, 2)] # <- draw the histogram on tab 2\n)\nM1 DKAI Foundations of Agent-based systems 37/38"
+    },
+    {
+      "page": 47,
+      "slide": 38,
+      "text": "Agenda Simulation MABS Mesa\nOverview Basics Visualization\nComing Next\nPractical Session\nMABS with Mesa\nor JADE\nM1 DKAI Foundations of Agent-based systems 38/38"
+    }
+  ]
+}

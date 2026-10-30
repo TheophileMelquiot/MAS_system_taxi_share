@@ -58,9 +58,11 @@ remplacés. Les comptes par passager et la recherche des insertions restent
 présents. Aucune mesure comparative de performance n'a été faite : les durées
 de tests ne permettent pas d'annoncer un facteur d'accélération.
 
-Le commit local `d488533` conserve l'état avant migration. Son push vers
-`origin/yanis` est bloqué par GitHub : erreur 403, droits d'écriture absents
-pour le compte `Yanicse`. Aucun succès de publication n'est annoncé.
+Le commit `d488533` conserve l’état avant migration. Le refus GitHub 403
+initial a depuis été résolu : ce commit et la migration `af2f1dc` ont
+été poussés sur `origin/yanis`. Une copie des tableaux de cette étude
+et de leur provenance est disponible dans
+[results/capacity-comparison](results/capacity-comparison/README.md).
 
 L'interface Tk n'a pas fait l'objet d'un nouveau contrôle visuel ; le rendu et
 ses exports ont été exercés par la suite automatique.

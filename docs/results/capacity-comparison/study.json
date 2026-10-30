@@ -1,0 +1,40 @@
+{
+  "config": {
+    "width": 21,
+    "height": 21,
+    "horizontal_axes": 5,
+    "vertical_axes": 5,
+    "axis_spacing": 2,
+    "buildings": 32,
+    "taxis": 8,
+    "requests": 60,
+    "appearance_seconds": 300.0,
+    "capacity": 3,
+    "congestion_threshold": 2.0,
+    "detour_rate": 0.25,
+    "detour_cap_m": 400.0,
+    "seed": 2026,
+    "max_seconds": 7200.0
+  },
+  "seeds": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "capacities": {
+    "individual": 1,
+    "shared": 3
+  },
+  "delta": "shared minus individual",
+  "standard_deviation": "sample, across paired differences",
+  "metrics": {
+    "distance_total_m": "m",
+    "mean_waiting_seconds": "s",
+    "mean_total_seconds": "s",
+    "shared_distance_rate": "fraction"
+  },
+  "complete_pairs": 5,
+  "excluded_seeds": []
+}

@@ -273,7 +273,10 @@ not model transfers between taxis, walking, outside traffic or emissions. Five
 seeds under one main configuration support a limited comparison, not a general
 claim about real cities. The academic report is a separate deliverable.
 
-Detailed project notes are retained in French:
+Detailed project notes are retained in French. The [documentation index](docs/README.md)
+also includes the course and assignment notes imported from the parent folder,
+the original slides, decision history and [versioned experiment tables](docs/results/capacity-comparison/README.md).
+Historical descriptions are marked separately from the current implementation.
 
 - [Technical decisions](docs/technical-decisions.md)
 - [Rules and implementation checks](docs/rules-coverage.md)

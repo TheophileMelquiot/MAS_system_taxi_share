@@ -1,0 +1,68 @@
+{
+  "source": "session-5.pdf",
+  "sha256": "d4ef1b963457822c8f83ecbd300a37953516046f3febdbefb09ce22dba5868a8",
+  "page_count": 10,
+  "extraction": "pypdf, couche texte uniquement, ponctuation U+2014 remplacée par deux-points",
+  "pages": [
+    {
+      "page": 1,
+      "slide": 1,
+      "footer": null,
+      "text": "Foundations of Agent-based systems\nSession 5 – Project\nNicolas Sabouret\nUniversit´ e Paris-Saclay\nSeptember 2026"
+    },
+    {
+      "page": 2,
+      "slide": 2,
+      "footer": "2/9",
+      "text": "Agenda Taxi simulation\nAgenda\n1 2026/09/07– Introduction and basics\n1:30 lecture: basics of MAS\n0:30 tutorial: MAS modeling\n1:00 practical session: MAS in Java\n2 2026/09/14– Communication and platforms\n1:00 lecture: communication, platforms\n1:00 practical session: MAS in Java (cont.)\n1:00 tutorial : JADE\n3 2026/09/28– Practical session : JADE\n4 2026/10/05– MultiAgent Based Simulation\n1:00 lecture: theory of MABS\n2:00 practical session: MESA\n➜2026/10/12– Practical session : MABS project\n6 2026/10/19– Agentic AI (practical session)\nM1 DKAI Foundations of Agent-based systems 2/9"
+    },
+    {
+      "page": 3,
+      "slide": 3,
+      "footer": "3/9",
+      "text": "Agenda Taxi simulation\nSession 5\nMABS in Mesa or\nJADE\nM1 DKAI Foundations of Agent-based systems 3/9"
+    },
+    {
+      "page": 4,
+      "slide": 4,
+      "footer": "4/9",
+      "text": "Agenda Taxi simulation\nProject description\nGoal\nMultiAgent Based Simulation to study a concrete problem\nOrganisation\n✓Groups of 1 or 2 students\n✓6h work per student (3h today, 3h homework)\n✓Development: Python + mesa or Java + Jade\n✗Other MAS platforms (Repast, Gama...) not allowed\n✗Home-made MAS without library not allowed\nDeadline\nSunday, October the 25th, 23:59 CET\nM1 DKAI Foundations of Agent-based systems 4/9"
+    },
+    {
+      "page": 5,
+      "slide": 5,
+      "footer": "5/9",
+      "text": "Agenda Taxi simulation\nProject description\nGoal\nMultiAgent Based Simulation to study a concrete problem\nExpectations\nSource code\n5-10 pages max report\nEvaluation (0-20 grade)\nDesign choices 20%(to be explained in the report)\nImplementation 20%(source code & correct use of the library)\nFeatures & useability 20%(I will run the programs...)\nAnalysis 20%(simulation results in the report)\nOverall presentation 20%(report’s organization, comments in code, etc)\nM1 DKAI Foundations of Agent-based systems 5/9"
+    },
+    {
+      "page": 6,
+      "slide": 6,
+      "footer": "6/9",
+      "text": "Agenda Taxi simulation\nProject description\nMission\nIn order to reduce pollution, the city council wants to test a new carshare\nsolution for taxi. Your role is to evaluate the possible impact of such a\nsolution on the trafic, passenger’s travel time and acceptability.\nMethodology\nDesign should be incremental, e.g.\n1 single-passenger transport\n2 two-passengers with no route change\n3 two-passengers with route change & multi-hop\n4 multi-passengers, multi-hop, etc\nIdentify simulation parametersearly\nWhat is the question (observable variables)?\nMake it simple!(and even more simpler)\nM1 DKAI Foundations of Agent-based systems 6/9"
+    },
+    {
+      "page": 7,
+      "slide": 7,
+      "footer": "7/9",
+      "text": "Agenda Taxi simulation\nProject description\nQuestions\nHow to model car that transport passengers in the city,\nwithout going into too many details?\nE.g. multigrid with each cell being one district of the city\nHow to model people’s movements in the city\nE.g. can people walk from a district to the next one?\nHow to model taxishare and each passenger’s route?\nHow to model delais when reaching a new passenger?\nHow to model simulate travel time?\nHow to study acceptability (opt.)?\nHow to model possible trafic jam (opt.)?\nM1 DKAI Foundations of Agent-based systems 7/9"
+    },
+    {
+      "page": 8,
+      "slide": 8,
+      "footer": "8/9",
+      "text": "Agenda Taxi simulation\nProject in Mesa\nMesa: some recommendations\n✓UseMultiGrid\nYou want to have multiple cars/passengers/buildings on each cell\n✗Do not necessarily use the grid as a map!\nA district can be represented by one or by multiple cells, some\ncells can represent connections or highways\nVehicules can jump over cells (otherwise you need a routing\nalgorithm)\nTime to jump (internal step counter) =e.g.car speed or\ndistrict size or distance...\n✓Minimal direct communication is required\nPassengers need to call for a taxi: CFP + answers\n✓Use visualization interface from the begining\nView positions, draw graphs...\nM1 DKAI Foundations of Agent-based systems 8/9"
+    },
+    {
+      "page": 9,
+      "slide": 9,
+      "footer": "9/9",
+      "text": "Agenda Taxi simulation\nProject in Jade\nJade: some recommendations\n✗Do not implement a user interface\nLogs variable values in a file and use a spreadsheet\n✓In JADE, everything is an agent!\nUse “district” agents (and possibly connection agents, highway agents...)\n✓Use timers to for speed, trafic, boarding delays...\nWakerBehaviour is your friend\n✓Verify CPU usage!\nM1 DKAI Foundations of Agent-based systems 9/9"
+    },
+    {
+      "page": 10,
+      "slide": 10,
+      "footer": "10/9",
+      "text": "Agenda Taxi simulation\nLet’s begin!\nM1 DKAI Foundations of Agent-based systems 10/9"
+    }
+  ]
+}
